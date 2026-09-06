@@ -1,0 +1,354 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* ============================================================
+   SOTA-GIS Design System — Tailwind CSS v4
+   PRD Bagian 6: Sistem Desain
+   ============================================================ */
+
+@theme {
+    /* --- Font (PRD 6.3) --- */
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* --- Warna Utama (PRD 6.2) --- */
+    --color-ink: #14212B;
+    --color-paper: #F4F6F5;
+    --color-surface: #FFFFFF;
+    --color-line: #D7DEDC;
+    --color-muted: #5A6B72;
+    --color-brand: #175C6B;
+    --color-brand-dark: #0F4653;
+
+    /* --- Warna Klasifikasi Kerentanan (PRD 7.1) --- */
+    --color-rendah: #2C7A4B;
+    --color-rendah-bg: #E4F2E9;
+    --color-rendah-tx: #1B5233;
+
+    --color-sedang: #E0A32E;
+    --color-sedang-bg: #FCF1DA;
+    --color-sedang-tx: #8A5E00;
+
+    --color-tinggi: #B3352C;
+    --color-tinggi-bg: #FBE7E4;
+    --color-tinggi-tx: #8E2820;
+
+    /* --- Bayangan (PRD 6.4) --- */
+    --shadow-card: 0 1px 2px rgba(20, 33, 43, 0.08);
+    --shadow-modal: 0 12px 32px rgba(20, 33, 43, 0.18);
+
+    /* --- Radius (PRD 6.4) --- */
+    --radius-input: 6px;
+    --radius-card: 10px;
+    --radius-badge: 9999px;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
+@layer base {
+    html {
+        font-size: 15px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        font-weight: 400;
+        color: var(--color-ink);
+        background-color: var(--color-paper);
+        line-height: 1.6;
+    }
+
+    /* Angka tabular untuk skor dan koordinat (PRD 6.3) */
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Panjang baris maksimal 70 karakter (PRD 6.3) */
+    .max-prose {
+        max-width: 70ch;
+    }
+
+    /* Cincin fokus keyboard — harus terlihat (PRD 6.6) */
+    :focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
+    }
+
+    /* Hormati prefers-reduced-motion (PRD 6.6) */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+
+    /* Lompat ke konten utama (PRD 15) */
+    .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 16px;
+        z-index: 9999;
+        padding: 8px 16px;
+        background: var(--color-brand);
+        color: white;
+        border-radius: var(--radius-input);
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .skip-link:focus {
+        top: 16px;
+    }
+}
+
+/* ============================================================
+   Typography Utilities (PRD 6.3)
+   ============================================================ */
+
+@layer utilities {
+    .text-page-title {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .text-section-title {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .text-body {
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    .text-label {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .text-help {
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--color-muted);
+    }
+
+    .text-metric {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/* ============================================================
+   Component Base Styles (PRD 6.5)
+   ============================================================ */
+
+@layer components {
+    /* --- Tombol Utama --- */
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 20px;
+        background-color: var(--color-brand);
+        color: white;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: var(--radius-input);
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        text-decoration: none;
+    }
+    .btn-primary:hover {
+        background-color: var(--color-brand-dark);
+    }
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* --- Tombol Sekunder --- */
+    .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 20px;
+        background-color: white;
+        color: var(--color-ink);
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: var(--radius-input);
+        border: 1px solid var(--color-line);
+        cursor: pointer;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+        text-decoration: none;
+    }
+    .btn-secondary:hover {
+        background-color: var(--color-paper);
+        border-color: var(--color-muted);
+    }
+
+    /* --- Tombol Merusak --- */
+    .btn-danger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 20px;
+        background-color: white;
+        color: var(--color-tinggi);
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: var(--radius-input);
+        border: 1px solid var(--color-tinggi);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        text-decoration: none;
+    }
+    .btn-danger:hover {
+        background-color: var(--color-tinggi-bg);
+    }
+
+    /* Tombol merusak konfirmasi (dalam modal hapus) */
+    .btn-danger-solid {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 20px;
+        background-color: var(--color-tinggi);
+        color: white;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: var(--radius-input);
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        text-decoration: none;
+    }
+    .btn-danger-solid:hover {
+        background-color: var(--color-tinggi-tx);
+    }
+
+    /* --- Input Teks (PRD 6.5) --- */
+    .input-text {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 14px;
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-ink);
+        background-color: white;
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-input);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .input-text:focus {
+        border-color: var(--color-brand);
+        box-shadow: 0 0 0 2px rgba(23, 92, 107, 0.25);
+        outline: none;
+    }
+    .input-text::placeholder {
+        color: var(--color-muted);
+    }
+
+    /* Input nonaktif (PRD 6.5) */
+    .input-text:disabled,
+    .input-text[readonly] {
+        background-color: var(--color-paper);
+        color: var(--color-muted);
+        cursor: not-allowed;
+    }
+
+    /* Input tinggi 52px untuk formulir operator (PRD 6.4) */
+    .input-text-lg {
+        min-height: 52px;
+        padding: 12px 16px;
+    }
+
+    /* Input error state */
+    .input-text.is-error {
+        border-color: var(--color-tinggi);
+    }
+    .input-error-message {
+        font-size: 13px;
+        color: var(--color-tinggi-tx);
+        margin-top: 4px;
+    }
+
+    /* --- Kartu (PRD 6.5) --- */
+    .card {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-card);
+        padding: 20px;
+        box-shadow: var(--shadow-card);
+    }
+
+    /* --- Select / Dropdown --- */
+    .input-select {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 36px 10px 14px;
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-ink);
+        background-color: white;
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-input);
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235A6B72' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .input-select:focus {
+        border-color: var(--color-brand);
+        box-shadow: 0 0 0 2px rgba(23, 92, 107, 0.25);
+        outline: none;
+    }
+
+    /* --- Skeleton Loader (PRD 13.4) --- */
+    .skeleton {
+        background-color: #E2E8F0;
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0,
+            rgba(255, 255, 255, 0.5) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite ease-in-out;
+        border-radius: var(--radius-input);
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+}
