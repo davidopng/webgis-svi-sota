@@ -82,6 +82,7 @@
 
     /* Hormati prefers-reduced-motion (PRD 6.6) */
     @media (prefers-reduced-motion: reduce) {
+
         *,
         *::before,
         *::after {
@@ -105,6 +106,7 @@
         font-weight: 500;
         text-decoration: none;
     }
+
     .skip-link:focus {
         top: 16px;
     }
@@ -159,6 +161,7 @@
    ============================================================ */
 
 @layer components {
+
     /* --- Tombol Utama --- */
     .btn-primary {
         display: inline-flex;
@@ -177,9 +180,11 @@
         transition: background-color 0.15s ease;
         text-decoration: none;
     }
+
     .btn-primary:hover {
         background-color: var(--color-brand-dark);
     }
+
     .btn-primary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
@@ -203,6 +208,7 @@
         transition: background-color 0.15s ease, border-color 0.15s ease;
         text-decoration: none;
     }
+
     .btn-secondary:hover {
         background-color: var(--color-paper);
         border-color: var(--color-muted);
@@ -226,6 +232,7 @@
         transition: background-color 0.15s ease;
         text-decoration: none;
     }
+
     .btn-danger:hover {
         background-color: var(--color-tinggi-bg);
     }
@@ -248,6 +255,7 @@
         transition: background-color 0.15s ease;
         text-decoration: none;
     }
+
     .btn-danger-solid:hover {
         background-color: var(--color-tinggi-tx);
     }
@@ -266,11 +274,13 @@
         border-radius: var(--radius-input);
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
+
     .input-text:focus {
         border-color: var(--color-brand);
         box-shadow: 0 0 0 2px rgba(23, 92, 107, 0.25);
         outline: none;
     }
+
     .input-text::placeholder {
         color: var(--color-muted);
     }
@@ -293,6 +303,7 @@
     .input-text.is-error {
         border-color: var(--color-tinggi);
     }
+
     .input-error-message {
         font-size: 13px;
         color: var(--color-tinggi-tx);
@@ -327,6 +338,7 @@
         cursor: pointer;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
+
     .input-select:focus {
         border-color: var(--color-brand);
         box-shadow: 0 0 0 2px rgba(23, 92, 107, 0.25);
@@ -336,19 +348,29 @@
     /* --- Skeleton Loader (PRD 13.4) --- */
     .skeleton {
         background-color: #E2E8F0;
-        background-image: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0) 0,
-            rgba(255, 255, 255, 0.5) 50%,
-            rgba(255, 255, 255, 0) 100%
-        );
+        background-image: linear-gradient(90deg,
+                rgba(255, 255, 255, 0) 0,
+                rgba(255, 255, 255, 0.5) 50%,
+                rgba(255, 255, 255, 0) 100%);
         background-size: 200% 100%;
         animation: shimmer 1.5s infinite ease-in-out;
         border-radius: var(--radius-input);
     }
 
     @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* Marker Map Khusus Kantor & Fasilitas */
+    .custom-kantor-marker,
+    .custom-poi-marker {
+        background: transparent !important;
+        border: none !important;
     }
 }

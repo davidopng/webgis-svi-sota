@@ -21,14 +21,14 @@
             'bg'    => 'bg-sedang-bg',
             'text'  => 'text-sedang-tx',
             'border'=> 'border-sedang/20',
-            'icon'  => '▲',
+            'icon'  => '●',
             'label' => 'Kerentanan Sedang',
         ],
         'tinggi' => [
             'bg'    => 'bg-tinggi-bg',
             'text'  => 'text-tinggi-tx',
             'border'=> 'border-tinggi/20',
-            'icon'  => '◆',
+            'icon'  => '●',
             'label' => 'Kerentanan Tinggi',
         ],
         default => [

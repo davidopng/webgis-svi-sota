@@ -1,0 +1,62 @@
+================================================================================
+PETUNJUK DEPLOYMENT & SETUP WEBGIS SVI SOTA (KAMPUNG SOTA)
+Peneliti: David Leonardo Moento (Sistem Informasi - Universitas Musamus)
+Dosen Pembimbing: Fransiskus P. SI
+================================================================================
+
+1. SPESIFIKASI SISTEM:
+   - Framework  : Laravel 11.x
+   - PHP        : PHP 8.2 atau PHP 8.3 (dengan ekstensi: pdo_mysql, mbstring, openssl, gd, bcmath)
+   - Database   : MySQL / MariaDB
+   - Web Server : Nginx / Apache (Document Root diarahkan ke folder: /public)
+
+--------------------------------------------------------------------------------
+2. LANGKAH DEPLOYMENT / SETUP DI HOSTING / CPANEL:
+   a. Ekstrak file arsip WebGIS ke direktori web server.
+   b. Arahkan Document Root / Public Root domain ke folder "public" di dalam project ini.
+   c. Import file database:
+      - Buat database baru di cPanel / MySQL (misal: "webgis_sota").
+      - Import file "database_sota.sql" yang ada di folder root ini ke database tersebut.
+   d. Salin/Atur file konfigurasi environment (.env):
+      - Buat file ".env" dari template ".env.example" atau sesuaikan:
+        APP_NAME="WebGIS SVI Sota"
+        APP_ENV=production
+        APP_DEBUG=false
+        APP_URL=https://nama-domain-anda.com
+
+        DB_CONNECTION=mysql
+        DB_HOST=127.0.0.1
+        DB_PORT=3306
+        DB_DATABASE=nama_database_anda
+        DB_USERNAME=user_database_anda
+        DB_PASSWORD=password_database_anda
+   e. Jalankan perintah optimasi (jika memiliki akses Terminal/SSH):
+      php artisan key:generate
+      php artisan optimize:clear
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
+   f. Catatan Aset Frontend:
+      Folder "public/build" sudah siap pakai (sudah di-build via Vite production).
+      Tidak perlu menjalankan "npm run build" lagi di server.
+
+--------------------------------------------------------------------------------
+3. DAFTAR AKUN PENGGUNA RESMI (KREDENSIAL LOGIN):
+   Sistem mendukung login baik menggunakan Email/ID resmi maupun Username ringkas:
+
+   +-----------------------+-------------------+--------------------+-------------------+
+   | Peran (Role)          | Nama Lengkap      | Username / ID      | Password          |
+   +-----------------------+-------------------+--------------------+-------------------+
+   | Administrator         | Jhoni Arafat      | admin@sotagis.id   | AdminSota#2026!   |
+   |                       |                   | (atau: admin)      |                   |
+   | Operator Surveyor 1   | Harpiyansa        | operator1@sotagis.id| Surveyor1@Sota26 |
+   |                       |                   | (atau: operator1)  |                   |
+   | Operator Surveyor 2   | Kusnaeni          | operator2@sotagis.id| Surveyor2@Sota26 |
+   |                       |                   | (atau: operator2)  |                   |
+   | Kepala Kampung        | Conrada Murnan    | kpkampung@sotagis.id| KepalaSota#2026!  |
+   | (Pimpinan)            |                   | (atau: kepala_kampung)|               |
+   +-----------------------+-------------------+--------------------+-------------------+
+
+================================================================================
+Terima kasih banyak atas bantuan dan bimbingan Bapak.
+================================================================================

@@ -1,146 +1,73 @@
-@extends('layouts.app', ['role' => 'operator', 'userName' => 'Maria K.'])
+@extends('layouts.app', ['role' => 'operator', 'userName' => Auth::user()?->name ?? 'Operator'])
 
 @section('title', 'Daftar Data Saya — SOTA-GIS')
 @section('page-title', 'Daftar Data Saya')
 
+@php
+    $dataListJson = json_encode(($dataList ?? collect([]))->map(fn($item) => [
+        'id' => $item->id,
+        'nama_kk' => $item->nama_kk,
+        'jalur' => $item->jalur,
+        'alamat' => $item->alamat ?? (($item->rt ?? '') . ' / ' . ($item->rw ?? '')),
+        'skor' => $item->total_skor,
+        'skor_rata_rata' => number_format($item->total_skor / 9, 2, ',', '.'),
+        'klasifikasi' => $item->klasifikasi,
+        'status' => $item->status_verifikasi,
+        'diinput_pada' => $item->created_at ? $item->created_at->format('d M Y, H:i') : '-'
+    ])->values());
+@endphp
+
 @section('content')
-<div x-data="{
-    // State Filter & Cari
-    statusFilter: 'semua', // 'semua' | 'menunggu_verifikasi' | 'terverifikasi'
-    searchQuery: '',
-    toastSukses: false,
+<script>
+    function operatorDataList() {
+        const rawList = {!! $dataListJson !!};
+        return {
+            statusFilter: 'semua',
+            searchQuery: '',
+            toastSukses: false,
+            dataList: rawList,
+            init() {
+                // Cek jika ada query parameter status
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('status')) {
+                    this.statusFilter = urlParams.get('status');
+                }
+                if (urlParams.get('baru') === '1') {
+                    this.toastSukses = true;
+                    setTimeout(() => { this.toastSukses = false; }, 5000);
+                }
+            },
 
-    // Data 10 Sampel Milik Operator Maria K.
-    dataList: [
-        {
-            id: 1,
-            nama_kk: 'Yohanis Kaize',
-            jalur: 'Jalur B',
-            alamat: 'RT 03 / RW 01 No. 12',
-            skor: 20,
-            skor_rata_rata: '2,22',
-            klasifikasi: 'sedang',
-            status: 'menunggu_verifikasi',
-            diinput_pada: '04 Sep 2026, 14:32'
-        },
-        {
-            id: 2,
-            nama_kk: 'Kornelis Ndiken',
-            jalur: 'Poros Trans',
-            alamat: 'RT 09 / RW 03 No. 27',
-            skor: 18,
-            skor_rata_rata: '2,00',
-            klasifikasi: 'sedang',
-            status: 'menunggu_verifikasi',
-            diinput_pada: '04 Sep 2026, 11:20'
-        },
-        {
-            id: 3,
-            nama_kk: 'Albertina Kwipalo',
-            jalur: 'Poros Trans',
-            alamat: 'RT 08 / RW 02 No. 11',
-            skor: 19,
-            skor_rata_rata: '2,11',
-            klasifikasi: 'sedang',
-            status: 'menunggu_verifikasi',
-            diinput_pada: '04 Sep 2026, 09:45'
-        },
-        {
-            id: 4,
-            nama_kk: 'Siti Rahayu',
-            jalur: 'Poros Trans',
-            alamat: 'RT 07 / RW 02 No. 18',
-            skor: 13,
-            skor_rata_rata: '1,44',
-            klasifikasi: 'rendah',
-            status: 'terverifikasi',
-            diinput_pada: '03 Sep 2026, 16:15'
-        },
-        {
-            id: 5,
-            nama_kk: 'Petrus Gebze',
-            jalur: 'Jalur A',
-            alamat: 'RT 01 / RW 01 No. 04',
-            skor: 23,
-            skor_rata_rata: '2,56',
-            klasifikasi: 'tinggi',
-            status: 'terverifikasi',
-            diinput_pada: '03 Sep 2026, 14:10'
-        },
-        {
-            id: 6,
-            nama_kk: 'Agustina Mahuze',
-            jalur: 'Jalur B',
-            alamat: 'RT 02 / RW 01 No. 15',
-            skor: 11,
-            skor_rata_rata: '1,22',
-            klasifikasi: 'rendah',
-            status: 'terverifikasi',
-            diinput_pada: '03 Sep 2026, 10:30'
-        },
-        {
-            id: 7,
-            nama_kk: 'Markus Balagaize',
-            jalur: 'Jalur B',
-            alamat: 'RT 04 / RW 02 No. 08',
-            skor: 22,
-            skor_rata_rata: '2,44',
-            klasifikasi: 'tinggi',
-            status: 'terverifikasi',
-            diinput_pada: '02 Sep 2026, 15:40'
-        },
-        {
-            id: 8,
-            nama_kk: 'Barnabas Kaize',
-            jalur: 'Jalur B',
-            alamat: 'RT 03 / RW 01 No. 22',
-            skor: 16,
-            skor_rata_rata: '1,78',
-            klasifikasi: 'sedang',
-            status: 'terverifikasi',
-            diinput_pada: '02 Sep 2026, 13:10'
-        },
-        {
-            id: 9,
-            nama_kk: 'Yakobus Gebze',
-            jalur: 'Poros Trans',
-            alamat: 'RT 06 / RW 02 No. 19',
-            skor: 14,
-            skor_rata_rata: '1,56',
-            klasifikasi: 'rendah',
-            status: 'terverifikasi',
-            diinput_pada: '01 Sep 2026, 16:00'
-        },
-        {
-            id: 10,
-            nama_kk: 'Paulina Mahuze',
-            jalur: 'Poros Trans',
-            alamat: 'RT 10 / RW 03 No. 31',
-            skor: 17,
-            skor_rata_rata: '1,89',
-            klasifikasi: 'sedang',
-            status: 'terverifikasi',
-            diinput_pada: '01 Sep 2026, 11:20'
-        }
-    ],
+            get countMenunggu() {
+                return this.dataList.filter(item => item.status === 'menunggu_verifikasi').length;
+            },
+            get countTerverifikasi() {
+                return this.dataList.filter(item => item.status === 'terverifikasi').length;
+            },
 
-    init() {
-        // Cek jika ada query parameter status
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('status')) {
-            this.statusFilter = urlParams.get('status');
-        }
-    },
+            get filteredData() {
+                return this.dataList.filter(item => {
+                    const matchStatus = this.statusFilter === 'semua' || item.status === this.statusFilter;
+                    const q = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
+                    const matchSearch = !q ||
+                                        (item.nama_kk && item.nama_kk.toLowerCase().includes(q)) ||
+                                        (item.alamat && item.alamat.toLowerCase().includes(q));
+                    return matchStatus && matchSearch;
+                });
+            }
+        };
+    }
 
-    get filteredData() {
-        return this.dataList.filter(item => {
-            const matchStatus = this.statusFilter === 'semua' || item.status === this.statusFilter;
-            const matchSearch = item.nama_kk.toLowerCase().includes(this.searchQuery.toLowerCase().trim()) ||
-                                item.alamat.toLowerCase().includes(this.searchQuery.toLowerCase().trim());
-            return matchStatus && matchSearch;
+    if (window.Alpine) {
+        Alpine.data('operatorDataList', operatorDataList);
+    } else {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('operatorDataList', operatorDataList);
         });
     }
-}" class="space-y-6">
+</script>
+
+<div x-data="operatorDataList()" class="space-y-6">
 
     {{-- Header & Tombol Tambah --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -150,7 +77,7 @@
         </div>
         <a href="/operator/data/create" class="btn-primary self-start sm:self-auto font-bold shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>＋ Input Data Warga Baru</span>
+            <span>Input Data Warga Baru</span>
         </a>
     </div>
 
@@ -162,19 +89,19 @@
                     @click="statusFilter = 'semua'"
                     :class="statusFilter === 'semua' ? 'bg-brand text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                     class="rounded-md px-3 py-1.5 text-xs transition-colors">
-                Semua (27)
+                Semua (<span x-text="dataList.length"></span>)
             </button>
             <button type="button"
                     @click="statusFilter = 'menunggu_verifikasi'"
                     :class="statusFilter === 'menunggu_verifikasi' ? 'bg-sedang text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                     class="rounded-md px-3 py-1.5 text-xs transition-colors">
-                Menunggu Verifikasi (3)
+                Menunggu Verifikasi (<span x-text="countMenunggu"></span>)
             </button>
             <button type="button"
                     @click="statusFilter = 'terverifikasi'"
                     :class="statusFilter === 'terverifikasi' ? 'bg-rendah text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                     class="rounded-md px-3 py-1.5 text-xs transition-colors">
-                Terverifikasi (24)
+                Terverifikasi (<span x-text="countTerverifikasi"></span>)
             </button>
         </div>
 
@@ -199,8 +126,6 @@
                         <tr>
                             <th class="py-3.5 px-4">Nama Kepala Keluarga</th>
                             <th class="py-3.5 px-4">Jalur / Wilayah</th>
-                            <th class="py-3.5 px-4 text-center">Total Skor</th>
-                            <th class="py-3.5 px-4">Klasifikasi</th>
                             <th class="py-3.5 px-4">Status</th>
                             <th class="py-3.5 px-4 text-right">Aksi</th>
                         </tr>
@@ -217,22 +142,6 @@
 
                                 {{-- Jalur --}}
                                 <td class="py-3.5 px-4 text-xs font-medium" x-text="item.jalur"></td>
-
-                                {{-- Total Skor (Tabular Nums) --}}
-                                <td class="py-3.5 px-4 text-center font-bold tabular-nums" x-text="item.skor"></td>
-
-                                {{-- Klasifikasi Badge --}}
-                                <td class="py-3.5 px-4">
-                                    <template x-if="item.klasifikasi === 'tinggi'">
-                                        <x-badge-klasifikasi tingkat="tinggi" />
-                                    </template>
-                                    <template x-if="item.klasifikasi === 'sedang'">
-                                        <x-badge-klasifikasi tingkat="sedang" />
-                                    </template>
-                                    <template x-if="item.klasifikasi === 'rendah'">
-                                        <x-badge-klasifikasi tingkat="rendah" />
-                                    </template>
-                                </td>
 
                                 {{-- Status Verifikasi --}}
                                 <td class="py-3.5 px-4">
@@ -310,20 +219,9 @@
                     </template>
                 </div>
 
-                {{-- Detail Skor & Klasifikasi --}}
+                {{-- Bar Bawah Kartu Mobile --}}
                 <div class="flex items-center justify-between border-t border-line pt-2.5 text-xs">
-                    <div class="flex items-center gap-2">
-                        <template x-if="item.klasifikasi === 'tinggi'">
-                            <x-badge-klasifikasi tingkat="tinggi" />
-                        </template>
-                        <template x-if="item.klasifikasi === 'sedang'">
-                            <x-badge-klasifikasi tingkat="sedang" />
-                        </template>
-                        <template x-if="item.klasifikasi === 'rendah'">
-                            <x-badge-klasifikasi tingkat="rendah" />
-                        </template>
-                        <span class="text-muted">Skor: <strong class="text-ink tabular-nums" x-text="item.skor"></strong></span>
-                    </div>
+                    <span class="text-muted text-[11px]" x-text="item.diinput_pada || ''"></span>
 
                     {{-- Tombol Aksi Mobile --}}
                     <div>
@@ -334,9 +232,15 @@
                             </a>
                         </template>
                         <template x-if="item.status === 'terverifikasi'">
-                            <span class="text-[11px] text-muted italic">
-                                Terverifikasi Admin
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] text-muted italic">
+                                    Sudah diverifikasi
+                                </span>
+                                <a :href="'/operator/data/' + item.id + '/edit'"
+                                   class="btn-secondary !min-h-[32px] !py-1 !px-3 !text-xs font-bold text-muted hover:text-ink">
+                                    Lihat
+                                </a>
+                            </div>
                         </template>
                     </div>
                 </div>

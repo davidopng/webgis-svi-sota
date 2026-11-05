@@ -1,251 +1,110 @@
 @extends('layouts.app', [
     'role' => 'admin',
-    'userName' => 'Administrator'
+    'userName' => Auth::user()?->name ?? 'Jhoni Arafat'
 ])
 
 @section('title', 'Log Pembaruan — SOTA-GIS')
 @section('page-title', 'Log Pembaruan Sistem')
 
+@php
+    $logsJson = json_encode($logs ?? []);
+@endphp
+
 @section('content')
-<div x-data="{
-    // Filter State
-    filterAksi: 'semua',
-    filterPengguna: 'semua',
-    filterTanggal: '',
-    searchKk: '',
+<script>
+    function adminLogPage() {
+        const rawLogs = {!! $logsJson !!};
+        return {
+            // Filter State
+            filterAksi: 'semua',
+            filterPengguna: 'semua',
+            filterTanggal: '',
+            searchKk: '',
 
-    // Modal Detail State
-    modalDetail: false,
-    activeLog: null,
+            // Modal Detail State
+            modalDetail: false,
+            activeLog: null,
 
-    openDetail(log) {
-        this.activeLog = log;
-        this.modalDetail = true;
-    },
+            openDetail(log) {
+                this.activeLog = log;
+                this.modalDetail = true;
+            },
 
-    resetFilter() {
-        this.filterAksi = 'semua';
-        this.filterPengguna = 'semua';
-        this.filterTanggal = '';
-        this.searchKk = '';
-    },
+            resetFilter() {
+                this.filterAksi = 'semua';
+                this.filterPengguna = 'semua';
+                this.filterTanggal = '';
+                this.searchKk = '';
+                this.currentPage = 1;
+            },
 
-    // 10 Data Log Realistis Audit Trail SOTA-GIS (PRD 11.5)
-    logs: [
-        {
-            id: 1,
-            waktu: '04 Sep 2026, 14:32 WIT',
-            tanggal: '2026-09-04',
-            pengguna: 'Maria K.',
-            peran: 'Operator',
-            aksi: 'tambah',
-            aksiLabel: 'Tambah',
-            dataTerkait: 'Yohanis Kaize',
-            jalur: 'Jalur B',
-            keterangan: 'Perekaman data baru responden survei lapangan Jalur B RT 03/RW 01.',
-            sebelum: null, // Baru dibuat
-            sesudah: {
-                'Nama Kepala Keluarga': 'Yohanis Kaize',
-                'Wilayah Permukiman': 'Jalur B',
-                'Alamat Lengkap': 'RT 03 / RW 01 No. 12',
-                'Titik Koordinat': '-8.44271, 140.86935 (GPS)',
-                'Pendapatan Bulanan': '< Rp1.000.000 / bulan (Skor 3)',
-                'Pekerjaan Utama': 'Petani (Skor 2)',
-                'Pendidikan Tertinggi': 'Tidak tamat sekolah (Skor 3)',
-                'Jumlah Tanggungan': '1 orang (Skor 1)',
-                'Fisik Bangunan': 'Dinding Kayu / Lantai Semen (Skor 2)',
-                'Fasilitas Sanitasi': 'Jamban berbagi (Skor 2)',
-                'Sumber Air': 'Sumur gali (Skor 3)',
-                'Pendapatan Tambahan': 'Tidak ada (Skor 3)',
-                'Kepemilikan Lahan': 'Milik sendiri (Skor 1)',
-                'Total Skor SVI': '20 (Kerentanan Sedang)',
-                'Status Verifikasi': 'Menunggu Verifikasi'
-            },
-            perubahan: []
-        },
-        {
-            id: 2,
-            waktu: '04 Sep 2026, 11:15 WIT',
-            tanggal: '2026-09-04',
-            pengguna: 'Administrator',
-            peran: 'Admin',
-            aksi: 'verifikasi',
-            aksiLabel: 'Verifikasi',
-            dataTerkait: 'Petrus Gebze',
-            jalur: 'Jalur A',
-            keterangan: 'Verifikasi kesesuaian berkas foto rumah dengan 9 jawaban variabel SVI.',
-            sebelum: {
-                'Nama Kepala Keluarga': 'Petrus Gebze',
-                'Wilayah Permukiman': 'Jalur A',
-                'Alamat Lengkap': 'RT 01 / RW 01 No. 04',
-                'Status Verifikasi': 'Menunggu Verifikasi',
-                'Tayang di Peta Publik': 'Belum Tayang (Tertunda)',
-                'Total Skor SVI': '23 (Kerentanan Tinggi)',
-                'Diverifikasi Oleh': '—'
-            },
-            sesudah: {
-                'Nama Kepala Keluarga': 'Petrus Gebze',
-                'Wilayah Permukiman': 'Jalur A',
-                'Alamat Lengkap': 'RT 01 / RW 01 No. 04',
-                'Status Verifikasi': 'Terverifikasi',
-                'Tayang di Peta Publik': 'Tayang Aktif di Peta',
-                'Total Skor SVI': '23 (Kerentanan Tinggi)',
-                'Diverifikasi Oleh': 'Administrator (04 Sep 2026, 11:15)'
-            },
-            perubahan: ['Status Verifikasi', 'Tayang di Peta Publik', 'Diverifikasi Oleh']
-        },
-        {
-            id: 3,
-            waktu: '03 Sep 2026, 16:40 WIT',
-            tanggal: '2026-09-03',
-            pengguna: 'Administrator',
-            peran: 'Admin',
-            aksi: 'ubah',
-            aksiLabel: 'Ubah',
-            dataTerkait: 'Siti Rahayu',
-            jalur: 'Poros Trans',
-            keterangan: 'Koreksi material lantai berdasarkan pencocokan ulang foto rumah tampak depan.',
-            sebelum: {
-                'Nama Kepala Keluarga': 'Siti Rahayu',
-                'Wilayah Permukiman': 'Poros Trans',
-                'Dinding Rumah': 'Tembok (Skor 1)',
-                'Lantai Rumah': 'Tanah / Papan (Skor 3)',
-                'Total Skor SVI': '15 (Kerentanan Sedang)',
-                'Klasifikasi': 'Kerentanan Sedang'
-            },
-            sesudah: {
-                'Nama Kepala Keluarga': 'Siti Rahayu',
-                'Wilayah Permukiman': 'Poros Trans',
-                'Dinding Rumah': 'Tembok (Skor 1)',
-                'Lantai Rumah': 'Keramik / Ubin (Skor 1)',
-                'Total Skor SVI': '13 (Kerentanan Rendah)',
-                'Klasifikasi': 'Kerentanan Rendah'
-            },
-            perubahan: ['Lantai Rumah', 'Total Skor SVI', 'Klasifikasi']
-        },
-        {
-            id: 4,
-            waktu: '03 Sep 2026, 10:20 WIT',
-            tanggal: '2026-09-03',
-            pengguna: 'Maria K.',
-            peran: 'Operator',
-            aksi: 'tambah',
-            aksiLabel: 'Tambah',
-            dataTerkait: 'Fransiskus Samkakai',
-            jalur: 'Jalur A',
-            keterangan: 'Perekaman kuesioner SVI dan pengambilan koordinat GPS di Jalur A RT 02.',
-            sebelum: null,
-            sesudah: {
-                'Nama Kepala Keluarga': 'Fransiskus Samkakai',
-                'Wilayah Permukiman': 'Jalur A',
-                'Alamat Lengkap': 'RT 02 / RW 01 No. 09',
-                'Titik Koordinat': '-8.43810, 140.86330',
-                'Total Skor SVI': '25 (Kerentanan Tinggi)',
-                'Status Verifikasi': 'Menunggu Verifikasi'
-            },
-            perubahan: []
-        },
-        {
-            id: 5,
-            waktu: '02 Sep 2026, 15:10 WIT',
-            tanggal: '2026-09-02',
-            pengguna: 'Administrator',
-            peran: 'Admin',
-            aksi: 'hapus',
-            aksiLabel: 'Hapus',
-            dataTerkait: 'Uji Coba Lapangan (Poros Trans)',
-            jalur: 'Poros Trans',
-            keterangan: 'Penghapusan data entri uji coba kader yang berada di luar batas permukiman.',
-            sebelum: {
-                'Nama Kepala Keluarga': 'Uji Coba Lapangan',
-                'Wilayah Permukiman': 'Poros Trans',
-                'Titik Koordinat': '-8.46100, 140.88500 (Di luar batas)',
-                'Status': 'Dibatalkan / Uji coba'
-            },
-            sesudah: {
-                'Keterangan': 'Data telah dihapus permanen dari basis data sistem oleh Administrator dengan proteksi ketik nama.'
-            },
-            perubahan: ['Keterangan']
-        },
-        {
-            id: 6,
-            waktu: '02 Sep 2026, 11:30 WIT',
-            tanggal: '2026-09-02',
-            pengguna: 'Yosep M.',
-            peran: 'Operator',
-            aksi: 'ubah',
-            aksiLabel: 'Ubah',
-            dataTerkait: 'Agustina Mahuze',
-            jalur: 'Jalur B',
-            keterangan: 'Pembaruan jawaban pekerjaan utama dan pendapatan bulanan kepala keluarga.',
-            sebelum: {
-                'Pekerjaan Utama': 'Tidak bekerja / Serabutan (Skor 3)',
-                'Pendapatan Bulanan': '< Rp1.000.000 (Skor 3)',
-                'Total Skor SVI': '18 (Kerentanan Sedang)'
-            },
-            sesudah: {
-                'Pekerjaan Utama': 'Petani / Pedagang kecil (Skor 2)',
-                'Pendapatan Bulanan': 'Rp1.000.000 – Rp2.499.999 (Skor 2)',
-                'Total Skor SVI': '16 (Kerentanan Sedang)'
-            },
-            perubahan: ['Pekerjaan Utama', 'Pendapatan Bulanan', 'Total Skor SVI']
-        },
-        {
-            id: 7,
-            waktu: '01 Sep 2026, 13:45 WIT',
-            tanggal: '2026-09-01',
-            pengguna: 'Administrator',
-            peran: 'Admin',
-            aksi: 'verifikasi',
-            aksiLabel: 'Verifikasi',
-            dataTerkait: 'Dominikus Mejai',
-            jalur: 'Jalur A',
-            keterangan: 'Verifikasi validasi data warga Jalur A skor SVI 24.',
-            sebelum: {
-                'Status Verifikasi': 'Menunggu Verifikasi',
-                'Peta Publik': 'Nonaktif'
-            },
-            sesudah: {
-                'Status Verifikasi': 'Terverifikasi',
-                'Peta Publik': 'Aktif di Peta'
-            },
-            perubahan: ['Status Verifikasi', 'Peta Publik']
-        },
-        {
-            id: 8,
-            waktu: '01 Sep 2026, 09:20 WIT',
-            tanggal: '2026-09-01',
-            pengguna: 'Maria K.',
-            peran: 'Operator',
-            aksi: 'tambah',
-            aksiLabel: 'Tambah',
-            dataTerkait: 'Markus Balagaize',
-            jalur: 'Jalur B',
-            keterangan: 'Perekaman data kuesioner dan unggah foto tampak depan rumah Jalur B.',
-            sebelum: null,
-            sesudah: {
-                'Nama Kepala Keluarga': 'Markus Balagaize',
-                'Wilayah Permukiman': 'Jalur B',
-                'Total Skor SVI': '22 (Kerentanan Tinggi)',
-                'Status Verifikasi': 'Menunggu Verifikasi'
-            },
-            perubahan: []
-        }
-    ],
+            // Log Audit Trail
+            logs: rawLogs,
 
-    get filteredLogs() {
-        return this.logs.filter(log => {
-            const matchAksi = this.filterAksi === 'semua' || log.aksi === this.filterAksi;
-            const matchPengguna = this.filterPengguna === 'semua' || log.pengguna === this.filterPengguna;
-            const matchTanggal = !this.filterTanggal || log.tanggal === this.filterTanggal;
-            const matchSearch = !this.searchKk ||
-                log.dataTerkait.toLowerCase().includes(this.searchKk.toLowerCase()) ||
-                log.pengguna.toLowerCase().includes(this.searchKk.toLowerCase());
+            // Paginasi
+            perPage: 10,
+            currentPage: 1,
 
-            return matchAksi && matchPengguna && matchTanggal && matchSearch;
-        });
+            get totalPages() {
+                return Math.max(1, Math.ceil(this.filteredLogs.length / this.perPage));
+            },
+
+            get paginatedLogs() {
+                const start = (this.currentPage - 1) * this.perPage;
+                return this.filteredLogs.slice(start, start + this.perPage);
+            },
+
+            get pageNumbers() {
+                const pages = [];
+                const total = this.totalPages;
+                const current = this.currentPage;
+                for (let i = 1; i <= total; i++) {
+                    if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+                        pages.push(i);
+                    } else if (pages[pages.length - 1] !== '...') {
+                        pages.push('...');
+                    }
+                }
+                return pages;
+            },
+
+            goToPage(p) {
+                if (p === '...') return;
+                if (p >= 1 && p <= this.totalPages) {
+                    this.currentPage = p;
+                }
+            },
+
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                }
+            },
+
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            },
+
+            get filteredLogs() {
+                return this.logs.filter(log => {
+                    const matchAksi = this.filterAksi === 'semua' || log.aksi === this.filterAksi || (this.filterAksi === 'hapus' && log.aksi === 'delete');
+                    const matchPengguna = this.filterPengguna === 'semua' || log.pengguna === this.filterPengguna;
+                    const matchTanggal = !this.filterTanggal || log.tanggal === this.filterTanggal;
+                    const matchSearch = !this.searchKk ||
+                        (log.dataTerkait && log.dataTerkait.toLowerCase().includes(this.searchKk.toLowerCase())) ||
+                        (log.pengguna && log.pengguna.toLowerCase().includes(this.searchKk.toLowerCase())) ||
+                        (log.keterangan && log.keterangan.toLowerCase().includes(this.searchKk.toLowerCase()));
+
+                    return matchAksi && matchPengguna && matchTanggal && matchSearch;
+                });
+            }
+        };
     }
-}" class="space-y-6">
+</script>
+
+<div x-data="adminLogPage()" class="space-y-6">
 
     {{-- Header Halaman --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-line">
@@ -269,31 +128,31 @@
             <div class="flex flex-wrap items-center gap-1.5 text-xs">
                 <span class="text-muted font-semibold mr-1">Aksi:</span>
                 <button type="button"
-                        @click="filterAksi = 'semua'"
+                        @click="filterAksi = 'semua'; currentPage = 1"
                         :class="filterAksi === 'semua' ? 'bg-brand text-white' : 'bg-paper text-muted hover:text-ink border border-line'"
                         class="px-3 py-1.5 rounded-lg font-bold transition-colors">
                     Semua
                 </button>
                 <button type="button"
-                        @click="filterAksi = 'tambah'"
+                        @click="filterAksi = 'tambah'; currentPage = 1"
                         :class="filterAksi === 'tambah' ? 'bg-ink text-white' : 'bg-paper text-muted hover:text-ink border border-line'"
                         class="px-3 py-1.5 rounded-lg font-bold transition-colors">
                     Tambah
                 </button>
                 <button type="button"
-                        @click="filterAksi = 'ubah'"
+                        @click="filterAksi = 'ubah'; currentPage = 1"
                         :class="filterAksi === 'ubah' ? 'bg-blue-600 text-white' : 'bg-paper text-muted hover:text-ink border border-line'"
                         class="px-3 py-1.5 rounded-lg font-bold transition-colors">
                     Ubah
                 </button>
                 <button type="button"
-                        @click="filterAksi = 'verifikasi'"
+                        @click="filterAksi = 'verifikasi'; currentPage = 1"
                         :class="filterAksi === 'verifikasi' ? 'bg-rendah text-white' : 'bg-paper text-muted hover:text-ink border border-line'"
                         class="px-3 py-1.5 rounded-lg font-bold transition-colors">
                     Verifikasi
                 </button>
                 <button type="button"
-                        @click="filterAksi = 'hapus'"
+                        @click="filterAksi = 'hapus'; currentPage = 1"
                         :class="filterAksi === 'hapus' ? 'bg-tinggi text-white' : 'bg-paper text-muted hover:text-ink border border-line'"
                         class="px-3 py-1.5 rounded-lg font-bold transition-colors">
                     Hapus
@@ -304,11 +163,11 @@
             <div class="flex flex-wrap items-center gap-3">
                 {{-- Dropdown Pengguna --}}
                 <div class="w-full sm:w-44">
-                    <select x-model="filterPengguna" class="input-select !min-h-[38px] !py-1 text-xs font-medium">
+                    <select x-model="filterPengguna" @change="currentPage = 1" class="input-select !min-h-[38px] !py-1 text-xs font-medium">
                         <option value="semua">Semua Pengguna</option>
-                        <option value="Administrator">Administrator (Admin)</option>
-                        <option value="Maria K.">Maria K. (Operator)</option>
-                        <option value="Yosep M.">Yosep M. (Operator)</option>
+                        <option value="Jhoni Arafat">Jhoni Arafat (Admin)</option>
+                        <option value="Harpiyansa">Harpiyansa (Operator 1)</option>
+                        <option value="Kusnaeni">Kusnaeni (Operator 2)</option>
                     </select>
                 </div>
 
@@ -316,6 +175,7 @@
                 <div class="w-full sm:w-36">
                     <input type="date"
                            x-model="filterTanggal"
+                           @change="currentPage = 1"
                            class="input-text !min-h-[38px] !py-1 text-xs text-ink font-medium">
                 </div>
 
@@ -323,6 +183,7 @@
                 <div class="w-full sm:w-48">
                     <input type="text"
                            x-model="searchKk"
+                           @input="currentPage = 1"
                            placeholder="Cari warga / aksi..."
                            class="input-text !min-h-[38px] !py-1 text-xs">
                 </div>
@@ -354,7 +215,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-line text-ink">
-                    <template x-for="log in filteredLogs" :key="log.id">
+                    <template x-for="log in paginatedLogs" :key="log.id">
                         <tr class="hover:bg-paper/40 transition-colors">
                             {{-- Waktu --}}
                             <td class="py-3.5 px-4 text-xs font-mono text-muted tabular-nums whitespace-nowrap"
@@ -383,7 +244,7 @@
                                         Verifikasi
                                     </span>
                                 </template>
-                                <template x-if="log.aksi === 'hapus'">
+                                <template x-if="log.aksi === 'hapus' || log.aksi === 'delete'">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-tinggi-bg text-tinggi-tx border border-tinggi/30">
                                         Hapus
                                     </span>
@@ -428,16 +289,38 @@
             </div>
         </div>
 
-        {{-- Footer Paginasi Statis --}}
+        {{-- Footer Paginasi Interaktif --}}
         <div class="p-4 border-t border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted">
             <span>
-                Menampilkan <strong class="text-ink" x-text="filteredLogs.length"></strong> dari <strong class="text-ink" x-text="logs.length"></strong> catatan aktivitas
+                Menampilkan <strong class="text-ink" x-text="paginatedLogs.length"></strong> dari <strong class="text-ink" x-text="filteredLogs.length"></strong> catatan aktivitas
+                <template x-if="totalPages > 1">
+                    <span class="text-[11px] text-muted ml-1">(Halaman <span x-text="currentPage"></span> dari <span x-text="totalPages"></span>)</span>
+                </template>
             </span>
-            <div class="flex items-center gap-1 self-end sm:self-auto">
-                <span class="text-[11px] text-muted mr-2">Halaman 1 dari 1</span>
-                <button class="px-2.5 py-1 rounded bg-paper border border-line text-muted cursor-not-allowed" disabled>‹</button>
-                <button class="px-2.5 py-1 rounded bg-brand text-white font-bold">1</button>
-                <button class="px-2.5 py-1 rounded bg-paper border border-line text-muted cursor-not-allowed" disabled>›</button>
+            <div class="flex items-center gap-1 self-end sm:self-auto" x-show="totalPages > 1">
+                <button type="button"
+                        @click="prevPage()"
+                        :disabled="currentPage === 1"
+                        :class="currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-paper' : 'hover:bg-paper active:scale-95 text-ink font-bold'"
+                        class="px-2.5 py-1 rounded border border-line text-xs transition-all">
+                    ‹
+                </button>
+                <template x-for="p in pageNumbers" :key="p">
+                    <button type="button"
+                            @click="goToPage(p)"
+                            :disabled="p === '...'"
+                            :class="p === currentPage ? 'bg-brand text-white font-bold' : (p === '...' ? 'cursor-default text-muted border-none bg-transparent' : 'bg-paper text-ink hover:bg-slate-200')"
+                            class="min-w-[28px] h-7 px-2 rounded border border-line text-xs transition-colors flex items-center justify-center font-semibold"
+                            x-text="p">
+                    </button>
+                </template>
+                <button type="button"
+                        @click="nextPage()"
+                        :disabled="currentPage === totalPages"
+                        :class="currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-paper' : 'hover:bg-paper active:scale-95 text-ink font-bold'"
+                        class="px-2.5 py-1 rounded border border-line text-xs transition-all">
+                    ›
+                </button>
             </div>
         </div>
     </div>
@@ -513,19 +396,19 @@
                         <div class="divide-y divide-line space-y-1">
                             <template x-for="(valSesudah, key) in (activeLog ? activeLog.sesudah : {})" :key="key">
                                 <div class="grid grid-cols-2 gap-4 py-2 text-xs rounded px-2 transition-colors"
-                                     :class="activeLog.perubahan.includes(key) ? 'bg-amber-50/80 border-l-2 border-amber-500 font-medium' : ''">
+                                     :class="(activeLog?.perubahan || []).includes(key) ? 'bg-amber-50/80 border-l-2 border-amber-500 font-medium' : ''">
                                     {{-- Kolom Sebelum --}}
                                     <div>
                                         <span class="text-muted block text-[11px]" x-text="key"></span>
                                         <span class="text-ink"
-                                              :class="activeLog.perubahan.includes(key) ? 'line-through text-muted' : ''"
-                                              x-text="activeLog.sebelum[key] || '—'"></span>
+                                              :class="(activeLog?.perubahan || []).includes(key) ? 'line-through text-muted' : ''"
+                                              x-text="(activeLog?.sebelum && activeLog.sebelum[key]) ? activeLog.sebelum[key] : '—'"></span>
                                     </div>
 
                                     {{-- Kolom Sesudah (Disorot bila berubah) --}}
                                     <div>
                                         <span class="text-muted block text-[11px]" x-text="key"></span>
-                                        <span :class="activeLog.perubahan.includes(key) ? 'font-bold text-ink bg-amber-100 px-1.5 py-0.5 rounded inline-block' : 'text-ink'"
+                                        <span :class="(activeLog?.perubahan || []).includes(key) ? 'font-bold text-ink bg-amber-100 px-1.5 py-0.5 rounded inline-block' : 'text-ink'"
                                               x-text="valSesudah"></span>
                                     </div>
                                 </div>

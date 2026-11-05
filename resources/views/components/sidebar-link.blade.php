@@ -43,7 +43,7 @@
 
     {{-- Lencana jumlah (misal antrean verifikasi) --}}
     @if($badge)
-        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sedang px-1.5 text-xs font-bold text-white">
+        <span id="sidebar-badge-verifikasi" class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sedang px-1.5 text-xs font-bold text-white">
             {{ $badge }}
         </span>
     @endif

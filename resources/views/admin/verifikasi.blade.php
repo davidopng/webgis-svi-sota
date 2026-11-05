@@ -1,363 +1,267 @@
 @extends('layouts.app', [
     'role' => 'admin',
-    'userName' => 'Administrator',
-    'verifikasiCount' => 7
+    'userName' => Auth::user()?->name ?? 'Jhoni Arafat'
 ])
 
 @section('title', 'Antrean Verifikasi — SOTA-GIS')
 @section('page-title', 'Antrean Verifikasi Data')
 
+@php
+    $antreanListJson = json_encode(($antreanList ?? collect([]))->map(fn($item) => [
+        'id' => $item->id,
+        'nama_kk' => $item->nama_kk,
+        'jalur' => $item->jalur,
+        'alamat' => $item->alamat ?? (($item->rt ?? '') . ' / ' . ($item->rw ?? '')),
+        'patokan' => $item->patokan ?? '',
+        'operator' => $item->nama_penginput,
+        'waktu_input' => $item->created_at ? $item->created_at->format('d M Y, H:i') . ' WIT' : '-',
+        'waktu_ringkas' => $item->created_at ? $item->created_at->diffForHumans() : '-',
+        'status' => $item->status_verifikasi,
+        'latitude' => (float)$item->latitude,
+        'longitude' => (float)$item->longitude,
+        'lokasi_valid' => true,
+        'skor' => $item->total_skor,
+        'skor_rata_rata' => number_format($item->total_skor / 9, 2, ',', '.'),
+        'klasifikasi' => $item->klasifikasi,
+        'klasifikasi_label' => 'Kerentanan ' . ucfirst($item->klasifikasi),
+        'dinding' => $item->jenis_dinding ?? '-',
+        'lantai' => $item->jenis_lantai ?? '-',
+        'foto_rumah' => $item->foto_rumah,
+        'svi_items' => $item->svi_items,
+    ])->values());
+@endphp
+
 @section('content')
-<div x-data="{
-    // State Filter & Search
-    statusFilter: 'menunggu_verifikasi', // 'semua' | 'menunggu_verifikasi' | 'terverifikasi'
-    jalurFilter: 'semua',
-    klasifikasiFilter: 'semua',
-    searchQuery: '',
+<script>
+    function adminVerifikasi() {
+        const rawList = {!! $antreanListJson !!};
+        return {
+            statusFilter: 'menunggu_verifikasi',
+            jalurFilter: 'semua',
+            klasifikasiFilter: 'semua',
+            searchQuery: '',
+            selectedId: null,
+            drawerOpen: false,
+            tabAktif: 'svi',
+            catatanTolak: '',
+            modalKonfirmasiTolak: false,
+            modalFotoZoom: false,
+            fotoZoomSrc: '',
+            modalPetaDetail: false,
+            toastVisible: false,
+            toastMessage: '',
+            toastType: 'sukses',
+            currentIndex: 0,
+            fotoZoom: false,
+            fotoRotation: 0,
+            modalValidasi: false,
+            hapusTarget: null,
+            konfirmasiNamaInput: '',
+            modalHapus: false,
+            antreanList: rawList,
 
-    // State Modal Validasi Berdampingan
-    modalValidasi: false,
-    currentIndex: 0,
-    fotoZoom: false,
-    fotoRotation: 0,
+            init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const reqId = urlParams.get('id');
+                if (reqId) {
+                    const idx = this.filteredAntrean.findIndex(i => String(i.id) === String(reqId));
+                    if (idx !== -1) {
+                        this.currentIndex = idx;
+                        this.modalValidasi = true;
+                    }
+                }
+            },
 
-    // State Modal Konfirmasi Hapus Kedua
-    modalHapus: false,
-    hapusTarget: null,
-    konfirmasiNamaInput: '',
+            showToast(msg, type = 'sukses') {
+                this.toastMessage = msg;
+                this.toastType = type;
+                this.toastVisible = true;
+                setTimeout(() => { this.toastVisible = false; }, 6000);
+            },
 
-    // Toast Notifikasi
-    toastVisible: false,
-    toastType: 'berhasil',
-    toastMessage: '',
+            get filteredAntrean() {
+                return this.antreanList.filter(item => {
+                    const matchStatus = this.statusFilter === 'semua' || item.status === this.statusFilter;
+                    const matchJalur = this.jalurFilter === 'semua' || item.jalur === this.jalurFilter;
+                    const matchKlas = this.klasifikasiFilter === 'semua' || item.klasifikasi === this.klasifikasiFilter;
+                    const q = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
+                    const matchQuery = !q ||
+                                       (item.nama_kk && item.nama_kk.toLowerCase().includes(q)) ||
+                                       (item.alamat && item.alamat.toLowerCase().includes(q));
+                    return matchStatus && matchJalur && matchKlas && matchQuery;
+                });
+            },
 
-    showToast(type, msg) {
-        this.toastType = type;
-        this.toastMessage = msg;
-        this.toastVisible = true;
-        setTimeout(() => { this.toastVisible = false; }, 5000);
-    },
+            get currentItem() {
+                return this.filteredAntrean[this.currentIndex] || null;
+            },
 
-    // Basis Data 10 Warga Antrean & Terverifikasi
-    antreanList: [
-        {
-            id: 1,
-            nama_kk: 'Yohanis Kaize',
-            jalur: 'Jalur B',
-            alamat: 'RT 03 / RW 01 No. 12',
-            operator: 'Maria K.',
-            waktu_input: '4 Sep 2026, 14:32 WIT',
-            waktu_ringkas: '1 jam lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.44271,
-            longitude: 140.86935,
-            lokasi_valid: true,
-            skor: 20,
-            skor_rata_rata: '2,22',
-            klasifikasi: 'sedang',
-            klasifikasi_label: 'Kerentanan Sedang',
-            // Variabel Fisik untuk Cek Foto
-            dinding: 'Kayu',
-            lantai: 'Semen',
-            atap: 'Seng',
-            // 9 Variabel SVI
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Kurang dari Rp1.000.000 per bulan', skor: 3 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Petani', skor: 2 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tidak tamat sekolah', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '1 orang', skor: 1 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Semen', skor: 2 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'Jamban berbagi dengan tetangga', skor: 2 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        },
-        {
-            id: 2,
-            nama_kk: 'Siti Rahayu',
-            jalur: 'Poros Trans',
-            alamat: 'RT 07 / RW 02 No. 05',
-            operator: 'Maria K.',
-            waktu_input: '4 Sep 2026, 12:15 WIT',
-            waktu_ringkas: '2 jam lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.44850,
-            longitude: 140.87120,
-            lokasi_valid: true,
-            skor: 13,
-            skor_rata_rata: '1,44',
-            klasifikasi: 'rendah',
-            klasifikasi_label: 'Kerentanan Rendah',
-            dinding: 'Tembok',
-            lantai: 'Keramik / ubin',
-            atap: 'Seng',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Rp1.000.000 – Rp2.499.999 per bulan', skor: 2 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Pedagang kecil', skor: 2 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tamat SMA / sederajat', skor: 2 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '3 orang', skor: 2 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Tembok + Keramik', skor: 1 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'MCK pribadi', skor: 1 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur bor', skor: 2 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Hanya bantuan pemerintah', skor: 2 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        },
-        {
-            id: 3,
-            nama_kk: 'Kornelis Ndiken',
-            jalur: 'Poros Trans',
-            alamat: 'RT 09 / RW 03 No. 27',
-            operator: 'Maria K.',
-            waktu_input: '4 Sep 2026, 11:20 WIT',
-            waktu_ringkas: '3 jam lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.45120,
-            longitude: 140.87350,
-            lokasi_valid: true,
-            skor: 18,
-            skor_rata_rata: '2,00',
-            klasifikasi: 'sedang',
-            klasifikasi_label: 'Kerentanan Sedang',
-            dinding: 'Kayu dan tembok (campuran)',
-            lantai: 'Semen',
-            atap: 'Seng',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Rp1.000.000 – Rp2.499.999 per bulan', skor: 2 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Petani', skor: 2 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tamat SMA', skor: 2 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '4 orang', skor: 2 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Campuran + Semen', skor: 2 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'MCK umum', skor: 2 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        },
-        {
-            id: 4,
-            nama_kk: 'Dominikus Mejai',
-            jalur: 'Jalur A',
-            alamat: 'RT 01 / RW 01 No. 07',
-            operator: 'Yosep M.',
-            waktu_input: '4 Sep 2026, 09:30 WIT',
-            waktu_ringkas: '5 jam lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.44030,
-            longitude: 140.86280,
-            lokasi_valid: true,
-            skor: 24,
-            skor_rata_rata: '2,67',
-            klasifikasi: 'tinggi',
-            klasifikasi_label: 'Kerentanan Tinggi',
-            dinding: 'Kayu',
-            lantai: 'Tanah / papan',
-            atap: 'Daun / terpal',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Kurang dari Rp1.000.000 per bulan', skor: 3 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Tidak bekerja', skor: 3 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tidak tamat SD', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '6 orang', skor: 3 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Tanah', skor: 3 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'Tidak punya MCK', skor: 3 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Pinjam pakai', skor: 2 }
-            ]
-        },
-        {
-            id: 5,
-            nama_kk: 'Albertina Kwipalo',
-            jalur: 'Poros Trans',
-            alamat: 'RT 08 / RW 02 No. 11',
-            operator: 'Maria K.',
-            waktu_input: '4 Sep 2026, 08:45 WIT',
-            waktu_ringkas: '6 jam lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.44960,
-            longitude: 140.87240,
-            lokasi_valid: true,
-            skor: 19,
-            skor_rata_rata: '2,11',
-            klasifikasi: 'sedang',
-            klasifikasi_label: 'Kerentanan Sedang',
-            dinding: 'Kayu',
-            lantai: 'Semen',
-            atap: 'Seng',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Rp1.000.000 – Rp2.499.999 per bulan', skor: 2 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Petani', skor: 2 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tamat SMP', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '4 orang', skor: 2 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Semen', skor: 2 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'MCK umum', skor: 2 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur bor', skor: 2 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        },
-        {
-            id: 6,
-            nama_kk: 'Theresia Yolmen',
-            jalur: 'Poros Trans',
-            alamat: 'RT 11 / RW 03 No. 02',
-            operator: 'Yosep M.',
-            waktu_input: '3 Sep 2026, 17:10 WIT',
-            waktu_ringkas: '1 hari lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.45310,
-            longitude: 140.87510,
-            lokasi_valid: true,
-            skor: 21,
-            skor_rata_rata: '2,33',
-            klasifikasi: 'tinggi',
-            klasifikasi_label: 'Kerentanan Tinggi',
-            dinding: 'Kayu',
-            lantai: 'Semen',
-            atap: 'Seng bekas',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Kurang dari Rp1.000.000 per bulan', skor: 3 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Buruh serabutan', skor: 3 },
-                { no: 3, label: 'Pendidikan', jawaban: 'SD', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '5 orang', skor: 3 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Semen', skor: 2 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'MCK umum', skor: 2 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        },
-        {
-            id: 7,
-            nama_kk: 'Fransiskus Samkakai',
-            jalur: 'Jalur A',
-            alamat: 'RT 02 / RW 01 No. 09',
-            operator: 'Yosep M.',
-            waktu_input: '3 Sep 2026, 15:20 WIT',
-            waktu_ringkas: '1 hari lalu',
-            status: 'menunggu_verifikasi',
-            latitude: -8.43810,
-            longitude: 140.86330,
-            lokasi_valid: true,
-            skor: 25,
-            skor_rata_rata: '2,78',
-            klasifikasi: 'tinggi',
-            klasifikasi_label: 'Kerentanan Tinggi',
-            dinding: 'Kayu',
-            lantai: 'Tanah / kayu',
-            atap: 'Daun / terpal',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Kurang dari Rp1.000.000 per bulan', skor: 3 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Pekerja serabutan', skor: 3 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tidak tamat sekolah', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '5 orang', skor: 3 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Tanah', skor: 3 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'Tidak punya sanitasi', skor: 3 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Tidak memiliki lahan', skor: 3 }
-            ]
-        },
-        // Contoh Data Yang Sudah Terverifikasi
-        {
-            id: 8,
-            nama_kk: 'Petrus Gebze',
-            jalur: 'Jalur A',
-            alamat: 'RT 01 / RW 01 No. 04',
-            operator: 'Yosep M.',
-            waktu_input: '3 Sep 2026, 10:00 WIT',
-            waktu_ringkas: '1 hari lalu',
-            status: 'terverifikasi',
-            latitude: -8.43920,
-            longitude: 140.86410,
-            lokasi_valid: true,
-            skor: 23,
-            skor_rata_rata: '2,56',
-            klasifikasi: 'tinggi',
-            klasifikasi_label: 'Kerentanan Tinggi',
-            dinding: 'Kayu',
-            lantai: 'Semen',
-            atap: 'Seng',
-            svi_items: [
-                { no: 1, label: 'Pendapatan', jawaban: 'Kurang dari Rp1.000.000 per bulan', skor: 3 },
-                { no: 2, label: 'Pekerjaan', jawaban: 'Buruh harian lepas', skor: 3 },
-                { no: 3, label: 'Pendidikan', jawaban: 'Tidak tamat sekolah', skor: 3 },
-                { no: 4, label: 'Anggota keluarga', jawaban: '5 orang', skor: 3 },
-                { no: 5, label: 'Fisik bangunan', jawaban: 'Kayu + Semen', skor: 2 },
-                { no: 6, label: 'Fasilitas sanitasi', jawaban: 'MCK umum', skor: 2 },
-                { no: 7, label: 'Sumber air', jawaban: 'Sumur gali', skor: 3 },
-                { no: 8, label: 'Pendapatan tambahan', jawaban: 'Tidak ada', skor: 3 },
-                { no: 9, label: 'Kepemilikan lahan', jawaban: 'Milik sendiri', skor: 1 }
-            ]
-        }
-    ],
+            // Paginasi
+            perPage: 10,
+            currentPage: 1,
 
-    get filteredAntrean() {
-        return this.antreanList.filter(item => {
-            const matchStatus = this.statusFilter === 'semua' || item.status === this.statusFilter;
-            const matchJalur = this.jalurFilter === 'semua' || item.jalur === this.jalurFilter;
-            const matchKlas = this.klasifikasiFilter === 'semua' || item.klasifikasi === this.klasifikasiFilter;
-            const matchQuery = item.nama_kk.toLowerCase().includes(this.searchQuery.toLowerCase().trim()) ||
-                               item.alamat.toLowerCase().includes(this.searchQuery.toLowerCase().trim());
-            return matchStatus && matchJalur && matchKlas && matchQuery;
-        });
-    },
+            get totalPages() {
+                return Math.max(1, Math.ceil(this.filteredAntrean.length / this.perPage));
+            },
 
-    get currentItem() {
-        return this.filteredAntrean[this.currentIndex] || null;
-    },
+            get paginatedAntrean() {
+                const start = (this.currentPage - 1) * this.perPage;
+                return this.filteredAntrean.slice(start, start + this.perPage);
+            },
 
-    bukaModalPeriksa(index) {
-        this.currentIndex = index;
-        this.fotoZoom = false;
-        this.fotoRotation = 0;
-        this.modalValidasi = true;
-    },
+            get pageNumbers() {
+                const pages = [];
+                const total = this.totalPages;
+                const current = this.currentPage;
+                for (let i = 1; i <= total; i++) {
+                    if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+                        pages.push(i);
+                    } else if (pages[pages.length - 1] !== '...') {
+                        pages.push('...');
+                    }
+                }
+                return pages;
+            },
 
-    navSebelumnya() {
-        if (this.currentIndex > 0) {
-            this.currentIndex--;
-            this.fotoZoom = false;
-            this.fotoRotation = 0;
-        }
-    },
+            goToPage(p) {
+                if (p === '...') return;
+                if (p >= 1 && p <= this.totalPages) {
+                    this.currentPage = p;
+                }
+            },
 
-    navBerikutnya() {
-        if (this.currentIndex < this.filteredAntrean.length - 1) {
-            this.currentIndex++;
-            this.fotoZoom = false;
-            this.fotoRotation = 0;
-        }
-    },
+            nextPage() {
+                if (this.currentPage < this.totalPages) {
+                    this.currentPage++;
+                }
+            },
 
-    // Aksi Verifikasi & Tampilkan di Peta
-    verifikasiItem() {
-        if (!this.currentItem) return;
-        const target = this.currentItem;
-        target.status = 'terverifikasi';
-        this.modalValidasi = false;
-        this.showToast('berhasil', `Data ${target.nama_kk} terverifikasi dan kini tampil di peta publik.`);
-    },
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                }
+            },
 
-    // Pemicu Modal Hapus Kedua
-    bukaModalHapus(item) {
-        this.hapusTarget = item;
-        this.konfirmasiNamaInput = '';
-        this.modalHapus = true;
-    },
+            bukaModalPeriksa(itemOrIndex) {
+                if (typeof itemOrIndex === 'object' && itemOrIndex !== null) {
+                    const idx = this.filteredAntrean.findIndex(i => i.id === itemOrIndex.id);
+                    this.currentIndex = idx !== -1 ? idx : 0;
+                } else if (typeof itemOrIndex === 'number') {
+                    const globalIdx = (this.currentPage - 1) * this.perPage + itemOrIndex;
+                    this.currentIndex = (globalIdx < this.filteredAntrean.length) ? globalIdx : itemOrIndex;
+                }
+                this.fotoZoom = false;
+                this.fotoRotation = 0;
+                this.modalValidasi = true;
+            },
 
-    konfirmasiHapusPermanen() {
-        if (!this.hapusTarget) return;
-        if (this.konfirmasiNamaInput.trim() !== this.hapusTarget.nama_kk) return;
+            navSebelumnya() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.fotoZoom = false;
+                    this.fotoRotation = 0;
+                }
+            },
 
-        const nama = this.hapusTarget.nama_kk;
-        this.antreanList = this.antreanList.filter(x => x.id !== this.hapusTarget.id);
-        this.modalHapus = false;
-        this.modalValidasi = false;
-        this.showToast('gagal', `Data ${nama} dihapus permanen.`);
+            navBerikutnya() {
+                if (this.currentIndex < this.filteredAntrean.length - 1) {
+                    this.currentIndex++;
+                    this.fotoZoom = false;
+                    this.fotoRotation = 0;
+                }
+            },
+
+            // Aksi Verifikasi & Tampilkan di Peta
+            async verifikasiItem() {
+                if (!this.currentItem) return;
+                const target = this.currentItem;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+                try {
+                    const res = await fetch('/admin/data/' + target.id + '/verifikasi', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'Gagal memverifikasi data.');
+                    }
+
+                    target.status = 'terverifikasi';
+                    target.status_verifikasi = 'terverifikasi';
+
+                    // Perbarui status di localStorage
+                    if (window.SotaStorage) {
+                        window.SotaStorage.updateStatus(target.id, 'terverifikasi');
+                    }
+
+                    this.modalValidasi = false;
+                    this.showToast('Data berhasil diverifikasi.', 'sukses'); if (window.sotaToast) window.sotaToast('Data berhasil diverifikasi.', 'berhasil');
+                } catch (err) {
+                    console.error('Verifikasi error:', err);
+                    this.showToast('Data gagal disimpan. Silakan coba lagi.', 'gagal'); if (window.sotaToast) window.sotaToast('Data gagal disimpan. Silakan coba lagi.', 'gagal');
+                }
+            },
+
+            // Pemicu Modal Hapus Kedua
+            bukaModalHapus(item) {
+                this.hapusTarget = item;
+                this.konfirmasiNamaInput = '';
+                this.modalHapus = true;
+            },
+
+            async konfirmasiHapusPermanen() {
+                if (!this.hapusTarget) return;
+                // Langsung hapus tanpa ketik nama
+
+                const nama = this.hapusTarget.nama_kk;
+                const targetId = this.hapusTarget.id;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+                try {
+                    const res = await fetch('/admin/data/' + targetId, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'Gagal menghapus data.');
+                    }
+
+                    // Hapus dari localStorage jika ada
+                    if (window.SotaStorage) {
+                        window.SotaStorage.delete(targetId);
+                    }
+
+                    this.antreanList = this.antreanList.filter(x => x.id !== targetId);
+                    this.modalHapus = false;
+                    this.modalValidasi = false;
+                    this.showToast('Data berhasil dihapus.', 'sukses'); if (window.sotaToast) window.sotaToast('Data berhasil dihapus.', 'berhasil');
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    this.showToast('Data gagal disimpan. Silakan coba lagi.', 'gagal'); if (window.sotaToast) window.sotaToast('Data gagal disimpan. Silakan coba lagi.', 'gagal');
+                }
+            }
+        };
     }
-}" class="space-y-6">
+
+    if (window.Alpine) {
+        Alpine.data('adminVerifikasi', adminVerifikasi);
+    } else {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('adminVerifikasi', adminVerifikasi);
+        });
+    }
+</script>
+
+<div x-data="adminVerifikasi()" class="space-y-6">
 
     {{-- Toast Notification Melayang --}}
     <div x-show="toastVisible"
@@ -388,19 +292,19 @@
             {{-- Tabs Filter Status --}}
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button"
-                        @click="statusFilter = 'semua'"
+                        @click="statusFilter = 'semua'; currentPage = 1"
                         :class="statusFilter === 'semua' ? 'bg-brand text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                         class="rounded-md px-3 py-1.5 text-xs transition-colors">
                     Semua (<span x-text="antreanList.length"></span>)
                 </button>
                 <button type="button"
-                        @click="statusFilter = 'menunggu_verifikasi'"
+                        @click="statusFilter = 'menunggu_verifikasi'; currentPage = 1"
                         :class="statusFilter === 'menunggu_verifikasi' ? 'bg-sedang text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                         class="rounded-md px-3 py-1.5 text-xs transition-colors">
                     Menunggu Verifikasi (<span x-text="antreanList.filter(x => x.status === 'menunggu_verifikasi').length"></span>)
                 </button>
                 <button type="button"
-                        @click="statusFilter = 'terverifikasi'"
+                        @click="statusFilter = 'terverifikasi'; currentPage = 1"
                         :class="statusFilter === 'terverifikasi' ? 'bg-rendah text-white font-bold' : 'bg-paper text-muted hover:text-ink'"
                         class="rounded-md px-3 py-1.5 text-xs transition-colors">
                     Terverifikasi (<span x-text="antreanList.filter(x => x.status === 'terverifikasi').length"></span>)
@@ -412,6 +316,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 <input type="text"
                        x-model="searchQuery"
+                       @input="currentPage = 1"
                        class="input-text pl-9 !min-h-[38px] !py-1 text-xs"
                        placeholder="Cari nama kepala keluarga…">
             </div>
@@ -421,17 +326,18 @@
         <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-line text-xs">
             <div class="flex items-center gap-2">
                 <span class="text-muted font-medium">Jalur:</span>
-                <select x-model="jalurFilter" class="input-select !min-h-[32px] !py-1 !text-xs !w-auto">
+                <select x-model="jalurFilter" @change="currentPage = 1" class="input-select !min-h-[32px] !py-1 !text-xs !w-auto">
                     <option value="semua">Semua Wilayah</option>
                     <option value="Jalur A">Jalur A</option>
                     <option value="Jalur B">Jalur B</option>
                     <option value="Poros Trans">Poros Trans</option>
+                    <option value="Poros Sota PLBN">Poros Sota PLBN</option>
                 </select>
             </div>
 
             <div class="flex items-center gap-2">
                 <span class="text-muted font-medium">Klasifikasi:</span>
-                <select x-model="klasifikasiFilter" class="input-select !min-h-[32px] !py-1 !text-xs !w-auto">
+                <select x-model="klasifikasiFilter" @change="currentPage = 1" class="input-select !min-h-[32px] !py-1 !text-xs !w-auto">
                     <option value="semua">Semua Tingkat</option>
                     <option value="rendah">Kerentanan Rendah</option>
                     <option value="sedang">Kerentanan Sedang</option>
@@ -440,7 +346,7 @@
             </div>
 
             <button type="button"
-                    @click="statusFilter = 'semua'; jalurFilter = 'semua'; klasifikasiFilter = 'semua'; searchQuery = ''"
+                    @click="statusFilter = 'semua'; jalurFilter = 'semua'; klasifikasiFilter = 'semua'; searchQuery = ''; currentPage = 1"
                     class="text-brand font-semibold hover:underline ml-auto">
                 Atur ulang filter
             </button>
@@ -466,13 +372,13 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line text-ink">
-                        <template x-for="(item, index) in filteredAntrean" :key="item.id">
+                        <template x-for="(item, index) in paginatedAntrean" :key="item.id">
                             <tr class="hover:bg-paper/40 transition-colors"
                                 :class="item.status === 'menunggu_verifikasi' ? 'border-l-[3px] border-l-sedang bg-sedang/[0.01]' : ''">
                                 {{-- Thumbnail Foto 48px Persegi (PRD 11.2) --}}
                                 <td class="py-3 px-4">
                                     <button type="button"
-                                            @click="bukaModalPeriksa(index)"
+                                            @click="bukaModalPeriksa(item)"
                                             title="Klik untuk melihat foto dan periksa data"
                                             class="h-12 w-12 rounded-lg bg-paper border border-line flex items-center justify-center text-muted font-bold text-base hover:border-brand transition-colors cursor-pointer overflow-hidden shadow-inner">
                                         🏠
@@ -482,7 +388,13 @@
                                 {{-- Nama KK & Operator Penginput --}}
                                 <td class="py-3 px-4">
                                     <p class="font-bold text-ink" x-text="item.nama_kk"></p>
-                                    <p class="text-xs text-muted" x-text="item.alamat + ' · ' + item.operator"></p>
+                                    <p class="text-xs text-muted">
+                                        <span x-text="item.alamat"></span>
+                                        <template x-if="item.patokan">
+                                            <span class="italic text-muted/80" x-text="' (' + item.patokan + ')'"></span>
+                                        </template>
+                                        <span x-text="' · ' + item.operator"></span>
+                                    </p>
                                 </td>
 
                                 {{-- Jalur --}}
@@ -518,7 +430,7 @@
                                 <td class="py-3 px-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <button type="button"
-                                                @click="bukaModalPeriksa(index)"
+                                                @click="bukaModalPeriksa(item)"
                                                 class="btn-primary !min-h-[34px] !py-1 !px-3.5 !text-xs font-bold shadow-sm"
                                                 :class="item.status === 'terverifikasi' ? '!bg-paper !text-ink hover:!bg-line/60 border border-line shadow-none' : ''">
                                             <span x-text="item.status === 'menunggu_verifikasi' ? 'Periksa' : 'Lihat'"></span>
@@ -558,18 +470,39 @@
             />
         </template>
 
-        {{-- Paginasi Footer Sesuai PRD 11.2 --}}
+        {{-- Paginasi Footer Interaktif Sesuai PRD 11.2 --}}
         <div class="p-4 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted">
             <div>
-                Menampilkan <strong class="text-ink" x-text="filteredAntrean.length"></strong> dari 91 data
+                Menampilkan <strong class="text-ink" x-text="paginatedAntrean.length"></strong> dari <strong class="text-ink" x-text="filteredAntrean.length"></strong> data
+                <template x-if="totalPages > 1">
+                    <span class="text-[11px] text-muted ml-1">(Halaman <span x-text="currentPage"></span> dari <span x-text="totalPages"></span>)</span>
+                </template>
             </div>
 
-            <div class="flex items-center gap-1.5">
-                <button type="button" class="px-2.5 py-1 rounded bg-paper border border-line text-muted cursor-not-allowed">‹</button>
-                <button type="button" class="px-2.5 py-1 rounded bg-brand text-white font-bold">1</button>
-                <button type="button" class="px-2.5 py-1 rounded bg-paper border border-line hover:bg-paper/80">2</button>
-                <button type="button" class="px-2.5 py-1 rounded bg-paper border border-line hover:bg-paper/80">3</button>
-                <button type="button" class="px-2.5 py-1 rounded bg-paper border border-line hover:bg-paper/80">›</button>
+            <div class="flex items-center gap-1 self-end sm:self-auto" x-show="totalPages > 1">
+                <button type="button"
+                        @click="prevPage()"
+                        :disabled="currentPage === 1"
+                        :class="currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-paper' : 'hover:bg-paper active:scale-95 text-ink font-bold'"
+                        class="px-2.5 py-1 rounded border border-line text-xs transition-all">
+                    ‹
+                </button>
+                <template x-for="p in pageNumbers" :key="p">
+                    <button type="button"
+                            @click="goToPage(p)"
+                            :disabled="p === '...'"
+                            :class="p === currentPage ? 'bg-brand text-white font-bold' : (p === '...' ? 'cursor-default text-muted border-none bg-transparent' : 'bg-paper text-ink hover:bg-slate-200')"
+                            class="min-w-[28px] h-7 px-2 rounded border border-line text-xs transition-colors flex items-center justify-center font-semibold"
+                            x-text="p">
+                    </button>
+                </template>
+                <button type="button"
+                        @click="nextPage()"
+                        :disabled="currentPage === totalPages"
+                        :class="currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-paper' : 'hover:bg-paper active:scale-95 text-ink font-bold'"
+                        class="px-2.5 py-1 rounded border border-line text-xs transition-all">
+                    ›
+                </button>
             </div>
         </div>
     </div>
@@ -613,12 +546,14 @@
                 </button>
             </div>
 
-            {{-- Badan Modal: Dua Kolom 50/50 (PRD 11.3) --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-line overflow-y-auto p-6 gap-6 flex-1">
+            {{-- Badan Modal: Dua Kolom 50/50 Seimbang (PRD 11.3 & Evaluasi UI) --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 overflow-y-auto p-6 gap-6 flex-1">
                 {{-- ============================================================
                      KOLOM KIRI: BUKTI VISUAL (Foto Rumah & Peta Titik Koordinat)
+                     Diberi padding kanan (lg:pr-6) dan batas garis (lg:border-r)
+                     agar seimbang dan tidak menempel rapat ke garis tengah
                      ============================================================ --}}
-                <div class="space-y-5">
+                <div class="space-y-5 lg:pr-6 lg:border-r border-line">
                     {{-- Foto Rumah Tampak Depan --}}
                     <div>
                         <div class="flex items-center justify-between mb-2">
@@ -637,13 +572,26 @@
                             </div>
                         </div>
 
-                        <div class="aspect-video bg-paper rounded-xl border border-line flex flex-col items-center justify-center text-muted p-4 overflow-hidden relative shadow-inner">
-                            <div class="w-full h-full flex flex-col items-center justify-center transition-transform duration-300"
-                                 :style="`transform: rotate(${fotoRotation}deg) scale(${fotoZoom ? 1.4 : 1});`">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 text-muted/60"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                                <p class="text-xs font-bold text-ink">Foto Rumah Responden</p>
-                                <p class="text-[11px] text-muted mt-0.5">Tampak depan seluruh bangunan terlihat jelas</p>
-                            </div>
+                        <div class="aspect-video bg-paper rounded-xl border border-line flex flex-col items-center justify-center text-muted p-2 overflow-hidden relative shadow-inner">
+                            {{-- Jika Ada Foto Rumah --}}
+                            <template x-if="currentItem && currentItem.foto_rumah">
+                                <div class="w-full h-full flex items-center justify-center overflow-hidden">
+                                    <img :src="currentItem.foto_rumah"
+                                         alt="Foto Rumah Responden"
+                                         class="w-full h-full object-contain transition-transform duration-300 select-none pointer-events-none"
+                                         :style="`transform: rotate(${fotoRotation}deg) scale(${fotoZoom ? 1.5 : 1});`">
+                                </div>
+                            </template>
+
+                            {{-- Jika Belum / Tidak Ada Foto --}}
+                            <template x-if="!currentItem || !currentItem.foto_rumah">
+                                <div class="w-full h-full flex flex-col items-center justify-center transition-transform duration-300"
+                                     :style="`transform: rotate(${fotoRotation}deg) scale(${fotoZoom ? 1.4 : 1});`">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 text-muted/60"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                    <p class="text-xs font-bold text-ink">Foto Rumah Responden</p>
+                                    <p class="text-[11px] text-muted mt-0.5">Tampak depan seluruh bangunan terlihat jelas</p>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -687,7 +635,10 @@
                             </div>
                             <div>
                                 <span class="text-muted block">Alamat Detail:</span>
-                                <span class="text-ink" x-text="currentItem ? currentItem.alamat : ''"></span>
+                                <span class="text-ink font-medium" x-text="currentItem ? currentItem.alamat : ''"></span>
+                                <template x-if="currentItem && currentItem.patokan">
+                                    <span class="block text-[11px] text-muted italic mt-0.5" x-text="'Patokan: ' + currentItem.patokan"></span>
+                                </template>
                             </div>
                             <div>
                                 <span class="text-muted block">Penginput:</span>
@@ -704,18 +655,14 @@
                         </div>
                         <p class="text-muted text-[11px]">Pastikan jawaban kader di bawah cocok dengan kondisi fisik di foto:</p>
 
-                        <div class="grid grid-cols-3 gap-2 pt-1 font-medium">
-                            <div class="bg-surface p-2 rounded-lg border border-line">
+                        <div class="grid grid-cols-2 gap-3 pt-1 font-medium">
+                            <div class="bg-surface p-2.5 rounded-lg border border-line">
                                 <span class="text-muted block text-[10px] uppercase">Dinding:</span>
                                 <strong class="text-ink text-xs" x-text="currentItem ? currentItem.dinding : ''"></strong>
                             </div>
-                            <div class="bg-surface p-2 rounded-lg border border-line">
+                            <div class="bg-surface p-2.5 rounded-lg border border-line">
                                 <span class="text-muted block text-[10px] uppercase">Lantai:</span>
                                 <strong class="text-ink text-xs" x-text="currentItem ? currentItem.lantai : ''"></strong>
-                            </div>
-                            <div class="bg-surface p-2 rounded-lg border border-line">
-                                <span class="text-muted block text-[10px] uppercase">Atap:</span>
-                                <strong class="text-ink text-xs" x-text="currentItem ? currentItem.atap : ''"></strong>
                             </div>
                         </div>
                     </div>
@@ -798,18 +745,30 @@
                     </div>
                 </div>
 
-                {{-- Kanan: Revisi & Verifikasi --}}
+                {{-- Kanan: Aksi (Jika status menunggu verifikasi: Revisi & Verifikasi; Jika terverifikasi: Tutup) --}}
                 <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    <a :href="'/admin/data/' + (currentItem ? currentItem.id : 1) + '/edit'"
-                       class="btn-secondary !min-h-[38px] !py-1 !px-4 !text-xs font-semibold">
-                        Revisi data
-                    </a>
+                    <template x-if="!currentItem || currentItem.status === 'menunggu_verifikasi'">
+                        <div class="flex items-center gap-2">
+                            <a :href="'/admin/data/' + (currentItem ? currentItem.id : 1) + '/edit'"
+                               class="btn-secondary !min-h-[38px] !py-1 !px-4 !text-xs font-semibold">
+                                Revisi data
+                            </a>
 
-                    <button type="button"
-                            @click="verifikasiItem"
-                            class="btn-primary !min-h-[38px] !py-1 !px-5 !text-xs font-bold shadow-md">
-                        ✓ Verifikasi &amp; Tampilkan
-                    </button>
+                            <button type="button"
+                                    @click="verifikasiItem"
+                                    class="btn-primary !min-h-[38px] !py-1 !px-5 !text-xs font-bold shadow-md">
+                                ✓ Verifikasi &amp; Tampilkan
+                            </button>
+                        </div>
+                    </template>
+
+                    <template x-if="currentItem && currentItem.status === 'terverifikasi'">
+                        <button type="button"
+                                @click="modalValidasi = false"
+                                class="btn-primary !min-h-[38px] !py-1 !px-6 !text-xs font-bold shadow-sm">
+                            Tutup
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>

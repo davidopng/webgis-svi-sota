@@ -8,32 +8,132 @@ import 'leaflet/dist/leaflet.css';
 
 let previewMap = null;
 let previewMarker = null;
+let osmLayer = null;
+let satelliteLayer = null;
+let currentBasemap = 'peta';
 
 // Konfigurasi Default Lokasi Sota
-const DEFAULT_LAT = -8.44271;
-const DEFAULT_LNG = 140.86935;
+const DEFAULT_LAT = -8.42827;
+const DEFAULT_LNG = 141.00373;
 
 /**
  * Inisialisasi Peta Pratinjau 240px
  */
-export function initPreviewMap(initialLat, initialLng) {
+export function initPreviewMap(initialLat, initialLng, options = {}) {
     const mapEl = document.getElementById('map-preview');
     if (!mapEl) return;
 
-    const lat = initialLat || DEFAULT_LAT;
-    const lng = initialLng || DEFAULT_LNG;
+    const lat = (initialLat !== undefined && initialLat !== null && !isNaN(initialLat)) ? initialLat : DEFAULT_LAT;
+    const lng = (initialLng !== undefined && initialLng !== null && !isNaN(initialLng)) ? initialLng : DEFAULT_LNG;
+
+    function updateCoordState(newLat, newLng, source = 'drag') {
+        const latVal = typeof newLat === 'number' ? newLat.toFixed(5) : parseFloat(newLat).toFixed(5);
+        const lngVal = typeof newLng === 'number' ? newLng.toFixed(5) : parseFloat(newLng).toFixed(5);
+
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        const accuracyInfo = document.getElementById('gps-accuracy-info');
+
+        if (latInput) latInput.value = latVal;
+        if (lngInput) lngInput.value = lngVal;
+
+        if (accuracyInfo) {
+            accuracyInfo.textContent = source === 'click'
+                ? 'Posisi disesuaikan dari klik peta · WGS 84'
+                : 'Posisi disesuaikan manual · WGS 84';
+            accuracyInfo.classList.add('text-brand', 'font-medium');
+            accuracyInfo.classList.remove('text-muted');
+        }
+
+        // Kirim event kustom ke Alpine.js secara atomik (lat dan lng sekaligus)
+        window.dispatchEvent(new CustomEvent('sota:coord-updated', {
+            detail: { lat: latVal, lng: lngVal, source: source }
+        }));
+    }
 
     if (!previewMap) {
         previewMap = L.map('map-preview', {
             center: [lat, lng],
             zoom: 17,
             zoomControl: true,
+            scrollWheelZoom: true,
+            doubleClickZoom: true,
             attributionControl: false
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Layer Peta (OpenStreetMap) sebagai bawaan
+        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19
-        }).addTo(previewMap);
+        });
+
+        // Layer Satelit (Esri World Imagery)
+        satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19
+        });
+
+        osmLayer.addTo(previewMap);
+        currentBasemap = 'peta';
+
+        // Kontrol Pengalih Basemap (Peta & Satelit) di pojok kanan atas
+        const BasemapControl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar sota-preview-basemap-control');
+                container.style.border = 'none';
+                container.style.background = 'transparent';
+                container.style.margin = '10px 10px 0 0';
+
+                container.innerHTML = `
+                    <div class="inline-flex items-center rounded-lg bg-white/95 backdrop-blur-sm shadow-md border border-slate-200 p-0.5 text-xs font-semibold" style="pointer-events: auto;">
+                        <button type="button" id="btn-basemap-peta" class="px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-brand text-white shadow-xs">Peta</button>
+                        <button type="button" id="btn-basemap-satelit" class="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-ink hover:bg-slate-100 transition-all">Satelit</button>
+                    </div>
+                `;
+
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+
+                setTimeout(() => {
+                    const btnPeta = container.querySelector('#btn-basemap-peta');
+                    const btnSatelit = container.querySelector('#btn-basemap-satelit');
+
+                    if (btnPeta && btnSatelit) {
+                        btnPeta.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (currentBasemap === 'peta') return;
+                            if (previewMap.hasLayer(satelliteLayer)) {
+                                previewMap.removeLayer(satelliteLayer);
+                            }
+                            if (!previewMap.hasLayer(osmLayer)) {
+                                previewMap.addLayer(osmLayer);
+                            }
+                            currentBasemap = 'peta';
+                            btnPeta.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-brand text-white shadow-xs';
+                            btnSatelit.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-ink hover:bg-slate-100 transition-all';
+                        };
+
+                        btnSatelit.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (currentBasemap === 'satelit') return;
+                            if (previewMap.hasLayer(osmLayer)) {
+                                previewMap.removeLayer(osmLayer);
+                            }
+                            if (!previewMap.hasLayer(satelliteLayer)) {
+                                previewMap.addLayer(satelliteLayer);
+                            }
+                            currentBasemap = 'satelit';
+                            btnSatelit.className = 'px-2.5 py-1 rounded-md text-xs font-bold transition-all bg-brand text-white shadow-xs';
+                            btnPeta.className = 'px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-ink hover:bg-slate-100 transition-all';
+                        };
+                    }
+                }, 50);
+
+                return container;
+            }
+        });
+        new BasemapControl().addTo(previewMap);
 
         // Marker khusus dengan SVG lingkaran brand
         const iconSvg = `
@@ -55,34 +155,76 @@ export function initPreviewMap(initialLat, initialLng) {
             icon: customIcon
         }).addTo(previewMap);
 
-        // Event saat marker digeser oleh kader
+        // Event saat marker digeser oleh kader — perbarui input tanpa menarik balik
         previewMarker.on('dragend', function (event) {
             const position = previewMarker.getLatLng();
-            const latInput = document.getElementById('latitude');
-            const lngInput = document.getElementById('longitude');
-            const accuracyInfo = document.getElementById('gps-accuracy-info');
+            updateCoordState(position.lat, position.lng, 'drag');
+        });
 
-            if (latInput) latInput.value = position.lat.toFixed(5);
-            if (lngInput) lngInput.value = position.lng.toFixed(5);
-
-            if (accuracyInfo) {
-                accuracyInfo.textContent = 'Posisi disesuaikan manual · WGS 84';
-                accuracyInfo.classList.add('text-brand', 'font-medium');
-                accuracyInfo.classList.remove('text-muted');
-            }
-
-            // Trigger input event agar validasi & Alpine mendeteksi perubahan
-            if (latInput) latInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // Event saat pengguna mengklik peta — pindahkan pin langsung ke titik klik secara presisi
+        previewMap.on('click', function (event) {
+            const position = event.latlng;
+            previewMarker.setLatLng(position);
+            updateCoordState(position.lat, position.lng, 'click');
         });
     } else {
-        previewMap.setView([lat, lng], 17);
-        if (previewMarker) {
+        const targetZoom = options.zoom || previewMap.getZoom() || 17;
+        if (options.flyTo) {
+            previewMap.flyTo([lat, lng], targetZoom, { duration: 0.8 });
+        } else if (!options.keepView) {
+            previewMap.setView([lat, lng], targetZoom);
+        }
+        if (previewMarker && !options.skipMarker) {
             previewMarker.setLatLng([lat, lng]);
         }
         setTimeout(() => {
             previewMap.invalidateSize();
         }, 200);
     }
+}
+
+/**
+ * Pindahkan Penanda dan Pusatkan Peta Secara Halus
+ */
+export function setMarkerPosition(newLat, newLng, options = {}) {
+    const lat = parseFloat(newLat);
+    const lng = parseFloat(newLng);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    if (!previewMap) {
+        initPreviewMap(lat, lng, options);
+        return;
+    }
+
+    if (previewMarker) {
+        previewMarker.setLatLng([lat, lng]);
+    }
+
+    const zoom = options.zoom || 17;
+    if (options.flyTo) {
+        previewMap.flyTo([lat, lng], zoom, { duration: 0.8 });
+    } else {
+        previewMap.setView([lat, lng], zoom);
+    }
+
+    const latVal = lat.toFixed(5);
+    const lngVal = lng.toFixed(5);
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+    const accuracyInfo = document.getElementById('gps-accuracy-info');
+
+    if (latInput) latInput.value = latVal;
+    if (lngInput) lngInput.value = lngVal;
+
+    if (accuracyInfo) {
+        accuracyInfo.textContent = options.infoText || 'Posisi diarahkan ke wilayah Kampung Sota · WGS 84';
+        accuracyInfo.classList.add('text-brand', 'font-medium');
+        accuracyInfo.classList.remove('text-muted');
+    }
+
+    window.dispatchEvent(new CustomEvent('sota:coord-updated', {
+        detail: { lat: latVal, lng: lngVal, source: 'preset' }
+    }));
 }
 
 /**
@@ -116,6 +258,8 @@ export function ambilGPS(callbacks) {
             const lngInput = document.getElementById('longitude');
             const accuracyInfo = document.getElementById('gps-accuracy-info');
             const mapContainer = document.getElementById('map-preview-container');
+            const accuracyWarningEl = document.getElementById('gps-accuracy-warning');
+            const accuracyWarningText = document.getElementById('gps-accuracy-warning-text');
 
             if (latInput) {
                 latInput.value = lat.toFixed(5);
@@ -130,6 +274,20 @@ export function ambilGPS(callbacks) {
                 accuracyInfo.textContent = `Akurasi ±${accuracy} meter · diambil ${timeStr} · WGS 84`;
                 accuracyInfo.classList.remove('text-tinggi-tx', 'text-brand');
                 accuracyInfo.classList.add('text-muted');
+            }
+
+            // Tampilkan peringatan kuning jika akurasi > 50 meter (PRD Bagian 10.4)
+            if (accuracy > 50) {
+                if (accuracyWarningEl) {
+                    accuracyWarningEl.classList.remove('hidden');
+                }
+                if (accuracyWarningText) {
+                    accuracyWarningText.textContent = `Akurasi ±${accuracy} meter. Tunggu beberapa detik lalu ambil ulang agar titik lebih tepat.`;
+                }
+            } else {
+                if (accuracyWarningEl) {
+                    accuracyWarningEl.classList.add('hidden');
+                }
             }
 
             // Tampilkan container peta pratinjau
@@ -163,7 +321,7 @@ export function ambilGPS(callbacks) {
  * Kompresi Gambar di Sisi Klien Menggunakan Canvas
  * Membatasi dimensi maksimum ke 1600px sesuai PRD Bagian 10.4
  */
-export function compressImage(file, maxWidthOrHeight = 1600, quality = 0.8) {
+export function compressImage(file, maxWidthOrHeight = 800, quality = 0.65) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -220,4 +378,5 @@ export function compressImage(file, maxWidthOrHeight = 1600, quality = 0.8) {
 // Ekspos ke window agar Alpine.js di Blade dapat memanggilnya
 window.sotaAmbilGPS = ambilGPS;
 window.sotaInitPreviewMap = initPreviewMap;
+window.sotaSetMarkerPosition = setMarkerPosition;
 window.sotaCompressImage = compressImage;

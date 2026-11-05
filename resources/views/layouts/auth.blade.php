@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
+    {{-- Favicon Browser --}}
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logosmall.svg') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen items-center justify-center bg-paper p-4">

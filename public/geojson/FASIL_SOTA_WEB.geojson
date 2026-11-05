@@ -1,0 +1,33 @@
+{
+"type": "FeatureCollection",
+"name": "FASIL_SOTA_WEB",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32754" } },
+"features": [
+{"type":"Feature","properties":{"id":null,"Nama":"Pos Lintas Batas Negara Sota","long":141.01804666218013,"lat":-8.4283475208400773},"geometry":{"type":"Point","coordinates":[501986.596499768493231,9068347.123206522315741]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Tugu 0 KM Merauke - Sabang","long":141.01600096702282,"lat":-8.4277593017852706},"geometry":{"type":"Point","coordinates":[501761.40677380154375,9068412.162922602146864]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Pos Satgas Pamtas","long":141.01401245982919,"lat":-8.4276081621670205},"geometry":{"type":"Point","coordinates":[501542.509970596991479,9068428.880398813635111]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Polsek Sota","long":141.01159749382086,"lat":-8.4283695790546282},"geometry":{"type":"Point","coordinates":[501276.664841372985393,9068344.711503719910979]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Kantor Kesehatan Pelabuhan - PLBDN","long":141.01214323038838,"lat":-8.4278793965089704},"geometry":{"type":"Point","coordinates":[501336.741805591213051,9068398.901269596070051]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Karantina Pertanian Sota","long":141.01150027428261,"lat":-8.4288270827639078},"geometry":{"type":"Point","coordinates":[501265.96131976461038,9068294.133001321926713]}},
+{"type":"Feature","properties":{"id":null,"Nama":"PLN Kampung Sota","long":141.01068983914047,"lat":-8.4300803161389943},"geometry":{"type":"Point","coordinates":[501176.744044828927144,9068155.585692772641778]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Kantor Kampung Sota","long":141.00946234034902,"lat":-8.4291179244076755},"geometry":{"type":"Point","coordinates":[501041.622800057812128,9068261.985338889062405]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Perumahan ASN Kampung Sota","long":141.00984795061825,"lat":-8.4325426664600318},"geometry":{"type":"Point","coordinates":[501084.06157893082127,9067883.365664534270763]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Puskesmas Sota","long":141.00924992791258,"lat":-8.4315230867650612},"geometry":{"type":"Point","coordinates":[501018.23395743384026,9067996.085802309215069]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Masjid Nurul Huda Sota","long":141.00762252186081,"lat":-8.4308458178810728},"geometry":{"type":"Point","coordinates":[500839.090225635678507,9068070.96439434401691]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Kantor Distrik Sota","long":141.00665196042033,"lat":-8.4311105164557532},"geometry":{"type":"Point","coordinates":[500732.24993921816349,9068041.702883142977953]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja Katolik St. Arnoldus Janssen","long":141.00857837782493,"lat":-8.4285321562653479},"geometry":{"type":"Point","coordinates":[500944.316843553096987,9068326.746536387130618]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GPI Papua Jemaat EDEN","long":141.00857837782493,"lat":-8.4275746663594084},"geometry":{"type":"Point","coordinates":[500944.319166440342087,9068432.600774297490716]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GBI Jemaat Agape","long":141.00727939407875,"lat":-8.4270501710355141},"geometry":{"type":"Point","coordinates":[500801.32639803661732,9068490.588672712445259]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GKAI Jemaat Imanuel","long":141.00245599782903,"lat":-8.4231875325753727},"geometry":{"type":"Point","coordinates":[500270.362531700404361,9068917.624939862638712]}},
+{"type":"Feature","properties":{"id":null,"Nama":"SPBU Sota","long":140.99887439736165,"lat":-8.4219326652583799},"geometry":{"type":"Point","coordinates":[499876.090379333938472,9069056.356038983911276]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GPDI Jemaat Karmel","long":140.99914236381997,"lat":-8.4228705478624804},"geometry":{"type":"Point","coordinates":[499905.589135780581273,9068952.669570308178663]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Tugu Kembar Sabang - Merauke","long":140.99837931299049,"lat":-8.4225127146041299},"geometry":{"type":"Point","coordinates":[499821.590313764987513,9068992.229153256863356]}},
+{"type":"Feature","properties":{"id":null,"Nama":"SMP Negeri 11 Sota","long":140.99687445257518,"lat":-8.4235347452119118},"geometry":{"type":"Point","coordinates":[499655.932040522922762,9068879.238714348524809]}},
+{"type":"Feature","properties":{"id":null,"Nama":"SMK Negreri 1 Sota","long":140.9959627130402,"lat":-8.4237863722520405},"geometry":{"type":"Point","coordinates":[499555.565793693531305,9068851.419452555477619]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GIDI Jemaat Kasih","long":141.00177137620673,"lat":-8.4382647307102925},"geometry":{"type":"Point","coordinates":[500194.990074541186914,9067250.782167976722121]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja GKI Shalom Sota","long":141.00501311677564,"lat":-8.4343203951591903},"geometry":{"type":"Point","coordinates":[500551.840950739395339,9067686.840903099626303]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Gereja Advent Sota","long":141.007294099555,"lat":-8.4326080241328665},"geometry":{"type":"Point","coordinates":[500802.933731255296152,9067876.146284732967615]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Masjid Darul Falah Sota","long":141.00155569588665,"lat":-8.4321570561908246},"geometry":{"type":"Point","coordinates":[500171.251041806011926,9067926.009711425751448]}},
+{"type":"Feature","properties":{"id":null,"Nama":"Kantor Pos Sota","long":141.0021733258942,"lat":-8.4264382598242946},"geometry":{"type":"Point","coordinates":[500239.243283846881241,9068558.244629953056574]}}
+]
+}

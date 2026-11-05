@@ -3,288 +3,36 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { SotaStorage } from './sota-storage.js';
 
 /**
  * SOTA-GIS — Peta Publik Interaktif
  * Sesuai PRD Bagian 7.1, 7.3, 8, dan 16
  */
 
-// Data 15 Responden Terverifikasi (Sampel Representatif Sota)
-export const DATA_WARGA = [
-    {
-        id: 1,
-        nama_kk: 'Yohanis Kaize',
-        jalur: 'Jalur B',
-        rt_rw: 'RT 03 / RW 01',
-        alamat: 'RT 03 / RW 01 No. 12',
-        latitude: -8.44271,
-        longitude: 140.86935,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 4,
-        total_skor: 20,
-        skor_rata_rata: '2,22',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null // Placeholder null untuk simulasi foto default
-    },
-    {
-        id: 2,
-        nama_kk: 'Petrus Gebze',
-        jalur: 'Jalur A',
-        rt_rw: 'RT 01 / RW 01',
-        alamat: 'RT 01 / RW 01 No. 04',
-        latitude: -8.43920,
-        longitude: 140.86410,
-        pekerjaan: 'Buruh harian lepas',
-        jumlah_anggota: 5,
-        total_skor: 23,
-        skor_rata_rata: '2,56',
-        klasifikasi: 'tinggi',
-        klasifikasi_label: 'Kerentanan Tinggi',
-        foto_rumah: null
-    },
-    {
-        id: 3,
-        nama_kk: 'Siti Rahayu',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 07 / RW 02',
-        alamat: 'RT 07 / RW 02 No. 18',
-        latitude: -8.44850,
-        longitude: 140.87120,
-        pekerjaan: 'Pedagang kecil',
-        jumlah_anggota: 3,
-        total_skor: 13,
-        skor_rata_rata: '1,44',
-        klasifikasi: 'rendah',
-        klasifikasi_label: 'Kerentanan Rendah',
-        foto_rumah: null
-    },
-    {
-        id: 4,
-        nama_kk: 'Markus Balagaize',
-        jalur: 'Jalur B',
-        rt_rw: 'RT 04 / RW 02',
-        alamat: 'RT 04 / RW 02 No. 08',
-        latitude: -8.44380,
-        longitude: 140.86820,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 6,
-        total_skor: 22,
-        skor_rata_rata: '2,44',
-        klasifikasi: 'tinggi',
-        klasifikasi_label: 'Kerentanan Tinggi',
-        foto_rumah: null
-    },
-    {
-        id: 5,
-        nama_kk: 'Agustina Mahuze',
-        jalur: 'Jalur B',
-        rt_rw: 'RT 02 / RW 01',
-        alamat: 'RT 02 / RW 01 No. 15',
-        latitude: -8.44110,
-        longitude: 140.87050,
-        pekerjaan: 'Guru PNS',
-        jumlah_anggota: 3,
-        total_skor: 11,
-        skor_rata_rata: '1,22',
-        klasifikasi: 'rendah',
-        klasifikasi_label: 'Kerentanan Rendah',
-        foto_rumah: null
-    },
-    {
-        id: 6,
-        nama_kk: 'Kornelis Ndiken',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 09 / RW 03',
-        alamat: 'RT 09 / RW 03 No. 27',
-        latitude: -8.45120,
-        longitude: 140.87350,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 4,
-        total_skor: 18,
-        skor_rata_rata: '2,00',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null
-    },
-    {
-        id: 7,
-        nama_kk: 'Fransiskus Samkakai',
-        jalur: 'Jalur A',
-        rt_rw: 'RT 02 / RW 01',
-        alamat: 'RT 02 / RW 01 No. 09',
-        latitude: -8.43810,
-        longitude: 140.86330,
-        pekerjaan: 'Pekerja serabutan',
-        jumlah_anggota: 5,
-        total_skor: 25,
-        skor_rata_rata: '2,78',
-        klasifikasi: 'tinggi',
-        klasifikasi_label: 'Kerentanan Tinggi',
-        foto_rumah: null
-    },
-    {
-        id: 8,
-        nama_kk: 'Maria Basik-Basik',
-        jalur: 'Jalur A',
-        rt_rw: 'RT 03 / RW 01',
-        alamat: 'RT 03 / RW 01 No. 14',
-        latitude: -8.43980,
-        longitude: 140.86540,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 4,
-        total_skor: 17,
-        skor_rata_rata: '1,89',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null
-    },
-    {
-        id: 9,
-        nama_kk: 'Yosep Moyuend',
-        jalur: 'Jalur B',
-        rt_rw: 'RT 05 / RW 02',
-        alamat: 'RT 05 / RW 02 No. 03',
-        latitude: -8.44490,
-        longitude: 140.86710,
-        pekerjaan: 'Wiraswasta mandiri',
-        jumlah_anggota: 4,
-        total_skor: 12,
-        skor_rata_rata: '1,33',
-        klasifikasi: 'rendah',
-        klasifikasi_label: 'Kerentanan Rendah',
-        foto_rumah: null
-    },
-    {
-        id: 10,
-        nama_kk: 'Albertina Kwipalo',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 08 / RW 02',
-        alamat: 'RT 08 / RW 02 No. 11',
-        latitude: -8.44960,
-        longitude: 140.87240,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 4,
-        total_skor: 19,
-        skor_rata_rata: '2,11',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null
-    },
-    {
-        id: 11,
-        nama_kk: 'Dominikus Mejai',
-        jalur: 'Jalur A',
-        rt_rw: 'RT 01 / RW 01',
-        alamat: 'RT 01 / RW 01 No. 07',
-        latitude: -8.44030,
-        longitude: 140.86280,
-        pekerjaan: 'Tidak bekerja',
-        jumlah_anggota: 6,
-        total_skor: 24,
-        skor_rata_rata: '2,67',
-        klasifikasi: 'tinggi',
-        klasifikasi_label: 'Kerentanan Tinggi',
-        foto_rumah: null
-    },
-    {
-        id: 12,
-        nama_kk: 'Theresia Yolmen',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 11 / RW 03',
-        alamat: 'RT 11 / RW 03 No. 02',
-        latitude: -8.45310,
-        longitude: 140.87510,
-        pekerjaan: 'Buruh serabutan',
-        jumlah_anggota: 5,
-        total_skor: 21,
-        skor_rata_rata: '2,33',
-        klasifikasi: 'tinggi',
-        klasifikasi_label: 'Kerentanan Tinggi',
-        foto_rumah: null
-    },
-    {
-        id: 13,
-        nama_kk: 'Barnabas Kaize',
-        jalur: 'Jalur B',
-        rt_rw: 'RT 03 / RW 01',
-        alamat: 'RT 03 / RW 01 No. 22',
-        latitude: -8.44210,
-        longitude: 140.86880,
-        pekerjaan: 'Petani',
-        jumlah_anggota: 3,
-        total_skor: 16,
-        skor_rata_rata: '1,78',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null
-    },
-    {
-        id: 14,
-        nama_kk: 'Yakobus Gebze',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 06 / RW 02',
-        alamat: 'RT 06 / RW 02 No. 19',
-        latitude: -8.44710,
-        longitude: 140.87010,
-        pekerjaan: 'Karyawan swasta',
-        jumlah_anggota: 3,
-        total_skor: 14,
-        skor_rata_rata: '1,56',
-        klasifikasi: 'rendah',
-        klasifikasi_label: 'Kerentanan Rendah',
-        foto_rumah: null
-    },
-    {
-        id: 15,
-        nama_kk: 'Paulina Mahuze',
-        jalur: 'Poros Trans',
-        rt_rw: 'RT 10 / RW 03',
-        alamat: 'RT 10 / RW 03 No. 31',
-        latitude: -8.45200,
-        longitude: 140.87420,
-        pekerjaan: 'Petani kebun',
-        jumlah_anggota: 4,
-        total_skor: 17,
-        skor_rata_rata: '1,89',
-        klasifikasi: 'sedang',
-        klasifikasi_label: 'Kerentanan Sedang',
-        foto_rumah: null
-    }
-];
+// Data Warga Bersih tanpa dummy text (Diambil dinamis dari Database MySQL)
+export const DATA_WARGA = [];
 
-// SVGs Marker Sesuai PRD 7.1 & 8.3 (22px, garis tepi putih 2px)
+
 export function createCustomMarkerIcon(klasifikasi) {
-    let svgContent = '';
-
-    if (klasifikasi === 'rendah') {
-        // Lingkaran Hijau #2C7A4B
-        svgContent = `
-            <svg width="24" height="24" viewBox="0 0 24 24" class="drop-shadow-md">
-                <circle cx="12" cy="12" r="9" fill="#2C7A4B" stroke="#FFFFFF" stroke-width="2.5" />
-            </svg>
-        `;
-    } else if (klasifikasi === 'sedang') {
-        // Segitiga Kuning #E0A32E
-        svgContent = `
-            <svg width="24" height="24" viewBox="0 0 24 24" class="drop-shadow-md">
-                <polygon points="12,3 21,20 3,20" fill="#E0A32E" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
-            </svg>
-        `;
-    } else {
-        // Belah Ketupat Merah #B3352C
-        svgContent = `
-            <svg width="24" height="24" viewBox="0 0 24 24" class="drop-shadow-md">
-                <polygon points="12,2 21,12 12,22 3,12" fill="#B3352C" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
-            </svg>
-        `;
+    let fillColor = '#2C7A4B'; // Rendah: Hijau
+    if (klasifikasi === 'sedang') {
+        fillColor = '#E0A32E'; // Sedang: Kuning / Emas
+    } else if (klasifikasi === 'tinggi') {
+        fillColor = '#B3352C'; // Tinggi: Merah
     }
+
+    const svgContent = `
+        <svg width="18" height="18" viewBox="0 0 18 18" class="drop-shadow-sm">
+            <circle cx="9" cy="9" r="7" fill="${fillColor}" stroke="#FFFFFF" stroke-width="2" />
+        </svg>
+    `;
 
     return L.divIcon({
-        html: `<div class="marker-container hover:scale-125 transition-transform cursor-pointer">${svgContent}</div>`,
+        html: `<div class="marker-container hover:scale-125 transition-transform cursor-pointer flex items-center justify-center">${svgContent}</div>`,
         className: 'sota-map-marker',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
     });
 }
 
@@ -293,38 +41,43 @@ export function initPetaPublik() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return;
 
-    // Batasan wilayah Kampung Sota agar pengguna tidak tersesat
-    const sotaCenter = [-8.444, 140.869];
+    // Batasan wilayah diperluas mencakup Merauke hingga Kampung Sota dan perbatasan
+    const sotaCenter = [-8.42827, 141.00373];
     const sotaBounds = [
-        [-8.49, 140.82],
-        [-8.40, 140.92]
+        [-8.70, 140.10],
+        [-8.20, 141.20]
     ];
 
     const map = L.map('map-container', {
         center: sotaCenter,
-        zoom: 15,
-        minZoom: 13,
+        zoom: 16,
+        minZoom: 9,
         maxZoom: 19,
         maxBounds: sotaBounds,
-        maxBoundsViscosity: 0.8,
-        zoomControl: false // Kita pindahkan tombol zoom ke kanan bawah
+        maxBoundsViscosity: 0.5,
+        zoomControl: false // Kita gunakan tombol kontrol vertikal kustom di kanan bawah (Google Maps style)
     });
 
-    // Posisikan Zoom Control di Kanan Bawah
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // Ekspos Kontrol Zoom Kustom untuk Tombol Blade
+    window.sotaMapZoomIn = function() {
+        if (map) map.zoomIn();
+    };
+    window.sotaMapZoomOut = function() {
+        if (map) map.zoomOut();
+    };
 
-    // Skala Peta
+    // Skala Peta di Kanan Bawah
     L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
     // Basemaps: OpenStreetMap & Esri World Imagery
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap &middot; Data survei Okt 2025 &middot; WGS 84'
+        attribution: '&copy; OpenStreetMap &middot; WGS 84'
     }).addTo(map);
 
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
-        attribution: '&copy; Esri World Imagery &middot; Data survei Okt 2025 &middot; WGS 84'
+        attribution: '&copy; Esri World Imagery &middot; WGS 84'
     });
 
     let currentBasemap = 'osm';
@@ -378,25 +131,121 @@ export function initPetaPublik() {
     // Kumpulan marker aktif & referensi id
     const markerRegistry = new Map();
 
+    // Fungsi Pengambil Data Warga Terverifikasi (Kombinasi Sampel + LocalStorage)
+    function getDaftarWarga() {
+        if (typeof window !== 'undefined' && Array.isArray(window.SOTA_REAL_WARGA)) {
+            return window.SOTA_REAL_WARGA;
+        }
+        return [];
+    }
+
     // Fungsi Render Marker Sesuai Filter
     function updateMarkers(activeFilters) {
         markersCluster.clearLayers();
         markerRegistry.clear();
 
         let visibleCount = 0;
+        const currentData = getDaftarWarga();
 
-        DATA_WARGA.forEach(warga => {
-            const matchKerentanan = activeFilters.kerentanan.includes(warga.klasifikasi);
-            const matchWilayah = activeFilters.wilayah.includes(warga.jalur);
+        currentData.forEach(warga => {
+            // 1. Filter Kerentanan
+            const matchKerentanan = Array.isArray(activeFilters.kerentanan) && activeFilters.kerentanan.includes(warga.klasifikasi);
 
-            if (matchKerentanan && matchWilayah) {
+            // 2. Filter Jalur / Wilayah
+            let matchWilayah = true;
+            if (activeFilters.jalur && activeFilters.jalur !== 'semua') {
+                matchWilayah = (warga.jalur || '').toLowerCase().includes(activeFilters.jalur.toLowerCase());
+            } else if (activeFilters.wilayah) {
+                matchWilayah = activeFilters.wilayah.includes('semua') ||
+                    activeFilters.wilayah.includes(warga.jalur) ||
+                    (warga.wilayah && activeFilters.wilayah.includes(warga.wilayah)) ||
+                    (warga.jalur && warga.jalur.includes('A') && activeFilters.wilayah.includes('Jalur A')) ||
+                    (warga.jalur && warga.jalur.includes('B') && activeFilters.wilayah.includes('Jalur B')) ||
+                    (warga.jalur && warga.jalur.toLowerCase().includes('poros') && (activeFilters.wilayah.includes('Poros Trans') || activeFilters.wilayah.includes('Poros Sota PLBN')));
+            }
+
+            // 3. Filter Status Kependudukan (Tetap / Tidak Tetap)
+            let matchStatus = true;
+            if (activeFilters.status_penduduk && activeFilters.status_penduduk !== 'semua') {
+                matchStatus = (warga.status_penduduk || '').toLowerCase() === activeFilters.status_penduduk.toLowerCase();
+            }
+
+            // 4. Filter 9 Indikator SVI Spesifik
+            let matchSvi = true;
+            if (activeFilters.svi && typeof activeFilters.svi === 'object') {
+                const s = activeFilters.svi;
+                // 1. Pendapatan
+                if (s.pendapatan && s.pendapatan !== 'semua') {
+                    const p = (warga.pendapatan || '').toLowerCase();
+                    if (s.pendapatan === '1' && !p.includes('2.500.000')) matchSvi = false;
+                    else if (s.pendapatan === '2' && !p.includes('1.000.000')) matchSvi = false;
+                    else if (s.pendapatan === '3' && !p.includes('kurang')) matchSvi = false;
+                }
+                // 2. Pekerjaan
+                if (matchSvi && s.pekerjaan && s.pekerjaan !== 'semua') {
+                    const pk = (warga.pekerjaan || '').toLowerCase();
+                    if (s.pekerjaan === '1' && !(pk.includes('pns') || pk.includes('tni') || pk.includes('polri') || pk.includes('tetap') || pk.includes('wiraswasta'))) matchSvi = false;
+                    else if (s.pekerjaan === '2' && !(pk.includes('petani') || pk.includes('peternak') || pk.includes('pedagang') || pk.includes('honorer') || pk.includes('kontrak'))) matchSvi = false;
+                    else if (s.pekerjaan === '3' && !(pk.includes('buruh') || pk.includes('serabutan') || pk.includes('tidak bekerja') || pk.includes('ibu rumah tangga'))) matchSvi = false;
+                }
+                // 3. Pendidikan
+                if (matchSvi && s.pendidikan && s.pendidikan !== 'semua') {
+                    const pd = (warga.pendidikan || '').toLowerCase();
+                    if (s.pendidikan === '1' && !(pd.includes('perguruan') || pd.includes('diploma') || pd.includes('s1') || pd.includes('s2') || pd.includes('d3'))) matchSvi = false;
+                    else if (s.pendidikan === '2' && !(pd.includes('sma') || pd.includes('smk') || pd.includes('sederajat'))) matchSvi = false;
+                    else if (s.pendidikan === '3' && !(pd.includes('sd') || pd.includes('smp') || pd.includes('tidak tamat'))) matchSvi = false;
+                }
+                // 4. Jumlah Anggota
+                if (matchSvi && s.anggota && s.anggota !== 'semua') {
+                    const jml = parseInt(warga.jumlah_anggota_keluarga) || 0;
+                    if (s.anggota === '1' && (jml < 1 || jml > 2)) matchSvi = false;
+                    else if (s.anggota === '2' && (jml < 3 || jml > 4)) matchSvi = false;
+                    else if (s.anggota === '3' && jml <= 4) matchSvi = false;
+                }
+                // 5. Dinding
+                if (matchSvi && s.dinding && s.dinding !== 'semua') {
+                    const d = (warga.jenis_dinding || '').toLowerCase();
+                    if (s.dinding === 'tembok' && !d.includes('tembok')) matchSvi = false;
+                    else if (s.dinding === 'kayu' && !d.includes('kayu')) matchSvi = false;
+                }
+                // 6. Lantai
+                if (matchSvi && s.lantai && s.lantai !== 'semua') {
+                    const l = (warga.jenis_lantai || '').toLowerCase();
+                    if (s.lantai === 'keramik' && !(l.includes('keramik') || l.includes('ubin'))) matchSvi = false;
+                    else if (s.lantai === 'semen' && !l.includes('semen')) matchSvi = false;
+                    else if (s.lantai === 'tanah_kayu' && !(l.includes('tanah') || l.includes('papan') || l.includes('kayu'))) matchSvi = false;
+                }
+                // 7. Sanitasi
+                if (matchSvi && s.sanitasi && s.sanitasi !== 'semua') {
+                    const sn = (warga.fasilitas_sanitasi || '').toLowerCase();
+                    if (s.sanitasi === 'pribadi' && !(sn.includes('pribadi') || sn.includes('sehat'))) matchSvi = false;
+                    else if (s.sanitasi === 'umum' && !(sn.includes('umum') || sn.includes('tetangga') || sn.includes('berbagi'))) matchSvi = false;
+                    else if (s.sanitasi === 'tidak_ada' && !(sn.includes('tidak') || sn.includes('menumpang'))) matchSvi = false;
+                }
+                // 8. Air Bersih
+                if (matchSvi && s.air && s.air !== 'semua') {
+                    const a = (warga.sumber_air || '').toLowerCase();
+                    if (s.air === 'pdam' && !a.includes('pdam')) matchSvi = false;
+                    else if (s.air === 'bor_galon' && !(a.includes('bor') || a.includes('galon'))) matchSvi = false;
+                    else if (s.air === 'gali' && !(a.includes('gali') || a.includes('hujan'))) matchSvi = false;
+                }
+                // 9. Kepemilikan Lahan
+                if (matchSvi && s.lahan && s.lahan !== 'semua') {
+                    const lh = (warga.kepemilikan_lahan || '').toLowerCase();
+                    if (s.lahan === 'sendiri' && !(lh.includes('sendiri') || lh.includes('warisan'))) matchSvi = false;
+                    else if (s.lahan === 'sewa' && !(lh.includes('sewa') || lh.includes('pinjam') || lh.includes('garapan'))) matchSvi = false;
+                    else if (s.lahan === 'tidak_ada' && !(lh.includes('tidak') || lh.includes('numpang'))) matchSvi = false;
+                }
+            }
+
+            if (matchKerentanan && matchWilayah && matchStatus && matchSvi) {
                 visibleCount++;
                 const icon = createCustomMarkerIcon(warga.klasifikasi);
                 const marker = L.marker([warga.latitude, warga.longitude], {
                     icon: icon,
                     klasifikasi: warga.klasifikasi,
                     title: warga.nama_kk,
-                    alt: `Rumah tangga ${warga.nama_kk}, ${warga.klasifikasi_label}, ${warga.jalur}`
+                    alt: `Rumah tangga ${warga.nama_kk}, ${warga.klasifikasi_label || warga.klasifikasi}, ${warga.jalur}`
                 });
 
                 // Klik marker membuka modal detail (PRD 8.3)
@@ -409,16 +258,17 @@ export function initPetaPublik() {
             }
         });
 
-        // Update teks counter
+        // Update teks counter dinamis sesuai data warga terverifikasi
         const counterEl = document.getElementById('filter-counter-text');
         if (counterEl) {
-            counterEl.textContent = `Menampilkan ${visibleCount} rumah tangga terverifikasi`;
+            const totalWarga = currentData.length;
+            counterEl.innerHTML = `Menampilkan <strong class="font-bold text-ink">${visibleCount}</strong> dari <strong class="font-bold text-ink">${totalWarga}</strong> rumah tangga`;
         }
 
         // Peringatan jika filter kosong
         const emptyWarning = document.getElementById('filter-empty-warning');
         if (emptyWarning) {
-            if (visibleCount === 0) {
+            if (activeFilters.kerentanan && activeFilters.kerentanan.length === 0) {
                 emptyWarning.classList.remove('hidden');
             } else {
                 emptyWarning.classList.add('hidden');
@@ -426,30 +276,46 @@ export function initPetaPublik() {
         }
     }
 
-    // State Filter Awal
+    // State Filter Awal (Semua aktif secara default agar peta menampilkan data secara lengkap)
     const filters = {
         kerentanan: ['rendah', 'sedang', 'tinggi'],
-        wilayah: ['Jalur A', 'Jalur B', 'Poros Trans']
+        wilayah: ['semua', 'Jalur A', 'Jalur B', 'Poros Trans', 'Poros Sota PLBN'],
+        jalur: 'semua',
+        status_penduduk: 'semua',
+        svi: {}
     };
 
     updateMarkers(filters);
 
-    // Listener Filter Checkbox
+    // Fungsi pengubah filter komprehensif langsung dari Alpine
+    window.applyComprehensiveFilters = function(customFilters) {
+        if (customFilters.kerentanan !== undefined) filters.kerentanan = customFilters.kerentanan;
+        if (customFilters.jalur !== undefined) filters.jalur = customFilters.jalur;
+        if (customFilters.status_penduduk !== undefined) filters.status_penduduk = customFilters.status_penduduk;
+        if (customFilters.svi !== undefined) filters.svi = customFilters.svi;
+        if (customFilters.wilayah !== undefined) filters.wilayah = customFilters.wilayah;
+        updateMarkers(filters);
+    };
+
+    // Fungsi pengubah filter kerentanan langsung dari Alpine
+    window.handleKerentananChange = function(activeList) {
+        filters.kerentanan = activeList;
+        updateMarkers(filters);
+    };
+
+    // Listener Filter Checkbox Legacy
     window.handleFilterChange = function() {
         const kerentananChecked = Array.from(document.querySelectorAll('input[name="filter_kerentanan"]:checked')).map(el => el.value);
-        const wilayahChecked = Array.from(document.querySelectorAll('input[name="filter_wilayah"]:checked')).map(el => el.value);
-
         filters.kerentanan = kerentananChecked;
-        filters.wilayah = wilayahChecked;
         updateMarkers(filters);
     };
 
     // Atur Ulang Filter
     window.resetFilter = function() {
-        document.querySelectorAll('input[name="filter_kerentanan"]').forEach(el => el.checked = true);
-        document.querySelectorAll('input[name="filter_wilayah"]').forEach(el => el.checked = true);
         filters.kerentanan = ['rendah', 'sedang', 'tinggi'];
-        filters.wilayah = ['Jalur A', 'Jalur B', 'Poros Trans'];
+        filters.jalur = 'semua';
+        filters.status_penduduk = 'semua';
+        filters.svi = {};
         updateMarkers(filters);
     };
 
@@ -467,7 +333,7 @@ export function initPetaPublik() {
             return;
         }
 
-        const matches = DATA_WARGA.filter(w => w.nama_kk.toLowerCase().includes(trimmed)).slice(0, 8);
+        const matches = getDaftarWarga().filter(w => w.nama_kk.toLowerCase().includes(trimmed)).slice(0, 8);
 
         if (matches.length === 0) {
             suggestionsBox.classList.remove('hidden');
@@ -480,19 +346,20 @@ export function initPetaPublik() {
                 const badgeColor = w.klasifikasi === 'tinggi' ? 'bg-tinggi-bg text-tinggi-tx border-tinggi/30' :
                                    w.klasifikasi === 'sedang' ? 'bg-sedang-bg text-sedang-tx border-sedang/30' :
                                    'bg-rendah-bg text-rendah-tx border-rendah/30';
-                const iconSymbol = w.klasifikasi === 'tinggi' ? '◆' :
-                                   w.klasifikasi === 'sedang' ? '▲' : '●';
+                const iconSymbol = '●';
+                const labelKlas = w.klasifikasi_label || ('Kerentanan ' + (w.klasifikasi ? (w.klasifikasi.charAt(0).toUpperCase() + w.klasifikasi.slice(1)) : 'Sedang'));
+                const alamatInfo = w.rt_rw || (w.rt && w.rw ? (w.rt + ' / ' + w.rw) : (w.alamat || 'Kampung Sota'));
 
                 return `
-                    <li onclick="window.pilihHasilCari(${w.id})"
+                    <li onclick="window.pilihHasilCari('${w.id}')"
                         class="p-2.5 hover:bg-paper cursor-pointer border-b border-line last:border-0 flex items-center justify-between gap-2 text-xs">
                         <div>
                             <span class="font-bold text-ink block">${w.nama_kk}</span>
-                            <span class="text-muted text-[11px]">${w.jalur} &middot; ${w.rt_rw}</span>
+                            <span class="text-muted text-[11px]">${w.jalur || 'Kampung Sota'} &middot; ${alamatInfo}</span>
                         </div>
                         <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${badgeColor}">
                             <span>${iconSymbol}</span>
-                            <span>${w.klasifikasi_label}</span>
+                            <span>${labelKlas}</span>
                         </span>
                     </li>
                 `;
@@ -502,7 +369,7 @@ export function initPetaPublik() {
 
     // Memilih Saran Pencarian
     window.pilihHasilCari = function(id) {
-        const item = DATA_WARGA.find(w => w.id === id);
+        const item = getDaftarWarga().find(w => String(w.id) === String(id));
         if (!item) return;
 
         // Tutup kotak saran

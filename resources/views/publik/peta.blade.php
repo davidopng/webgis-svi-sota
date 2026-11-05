@@ -6,7 +6,16 @@
 @push('head')
     {{-- Leaflet CSS & Bundled JS --}}
     @vite(['resources/js/peta-publik.js'])
+    <script>window.SOTA_REAL_WARGA = @json($wargaPoints ?? []);</script>
     <style>
+        html, body {
+            height: 100% !important;
+            overflow: hidden !important;
+            overscroll-behavior: none !important;
+        }
+        .leaflet-control-attribution {
+            user-select: text !important;
+        }
         .custom-cluster-icon {
             background: transparent !important;
             border: none !important;
@@ -14,6 +23,10 @@
         .sota-map-marker {
             background: transparent !important;
             border: none !important;
+        }
+        .leaflet-bottom.leaflet-right .leaflet-control-scale {
+            margin-right: 75px !important;
+            margin-bottom: 6px !important;
         }
     </style>
 @endpush
@@ -25,13 +38,54 @@
     mobileSheetOpen: false,
     currentBasemap: 'osm',
     searchQuery: '',
+    filterRendah: true,
+    filterSedang: true,
+    filterTinggi: true,
+    dataWarga: window.SOTA_REAL_WARGA || [],
+    toggleFilter(level) {
+        if (level === 'rendah') this.filterRendah = !this.filterRendah;
+        if (level === 'sedang') this.filterSedang = !this.filterSedang;
+        if (level === 'tinggi') this.filterTinggi = !this.filterTinggi;
+        this.syncFilter();
+    },
+    get countRendah() {
+        return this.dataWarga.filter(w => (w.klasifikasi || '').toLowerCase() === 'rendah').length;
+    },
+    get countSedang() {
+        return this.dataWarga.filter(w => (w.klasifikasi || '').toLowerCase() === 'sedang').length;
+    },
+    get countTinggi() {
+        return this.dataWarga.filter(w => (w.klasifikasi || '').toLowerCase() === 'tinggi').length;
+    },
+    getCountJalur(jalurName, level) {
+        return this.dataWarga.filter(w => (w.jalur || '').includes(jalurName) && (w.klasifikasi || '').toLowerCase() === level).length;
+    },
+    get totalTampil() {
+        let total = 0;
+        if (this.filterRendah) total += this.countRendah;
+        if (this.filterSedang) total += this.countSedang;
+        if (this.filterTinggi) total += this.countTinggi;
+        return total;
+    },
+    syncFilter() {
+        const list = [];
+        if (this.filterRendah) list.push('rendah');
+        if (this.filterSedang) list.push('sedang');
+        if (this.filterTinggi) list.push('tinggi');
+        if (window.handleKerentananChange) {
+            window.handleKerentananChange(list);
+        }
+    },
     init() {
         window.bukaDetailModal = (warga) => {
             this.selectedWarga = warga;
             this.detailModal = true;
         };
+        this.$nextTick(() => {
+            this.syncFilter();
+        });
     }
-}" class="relative w-full overflow-hidden" style="height: calc(100vh - 56px); margin-top: 56px;">
+}" class="fixed inset-0 top-14 w-full h-[calc(100vh-56px)] overflow-hidden">
 
     {{-- ============================================================
          1. CONTAINER PETA LEAFLET (100% Layar)
@@ -78,79 +132,120 @@
             </div>
         </div>
 
-        {{-- Kotak Filter Kerentanan & Wilayah --}}
-        <div class="card p-4 shadow-lg pointer-events-auto space-y-4">
-            {{-- Filter Tingkat Kerentanan --}}
-            <div>
-                <p class="text-xs font-bold uppercase tracking-wider text-muted mb-2">Tingkat Kerentanan</p>
-                <div class="space-y-1.5 text-xs">
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_kerentanan" value="rendah" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-rendah focus:ring-rendah/30 h-4 w-4">
-                        <span class="text-rendah font-bold text-sm">●</span>
-                        <span class="flex-1 font-medium text-ink">Kerentanan Rendah</span>
-                        <span class="text-muted tabular-nums font-bold">7</span>
-                    </label>
+        {{-- Kotak Filter Kerentanan (Persis Sesuai Screenshot 4) --}}
+        <div class="card p-4 shadow-lg pointer-events-auto space-y-3 rounded-2xl w-[260px] bg-white border border-line/70">
+            <h3 class="text-xs font-bold text-ink tracking-tight">Tingkat kerentanan</h3>
 
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_kerentanan" value="sedang" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-sedang focus:ring-sedang/30 h-4 w-4">
-                        <span class="text-sedang font-bold text-sm">▲</span>
-                        <span class="flex-1 font-medium text-ink">Kerentanan Sedang</span>
-                        <span class="text-muted tabular-nums font-bold">60</span>
-                    </label>
+            <div class="space-y-2">
+                {{-- 1. Rendah --}}
+                <div>
+                    <div class="flex items-center justify-between py-1 cursor-pointer select-none rounded-lg hover:bg-paper/60 px-1 -mx-1 transition-colors"
+                         @click="toggleFilter('rendah')">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox"
+                                   :checked="filterRendah"
+                                   @click.stop="toggleFilter('rendah')"
+                                   class="h-4 w-4 rounded border-line text-brand focus:ring-0 cursor-pointer">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-rendah"></span>
+                            <span class="text-xs text-ink font-medium">Rendah</span>
+                        </div>
+                        <span class="text-xs text-muted tabular-nums" x-text="countRendah"></span>
+                    </div>
 
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_kerentanan" value="tinggi" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-tinggi focus:ring-tinggi/30 h-4 w-4">
-                        <span class="text-tinggi font-bold text-sm">◆</span>
-                        <span class="flex-1 font-medium text-ink">Kerentanan Tinggi</span>
-                        <span class="text-muted tabular-nums font-bold">24</span>
-                    </label>
+                    {{-- Sebaran per wilayah untuk Rendah --}}
+                    <div x-show="filterRendah"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="ml-2 pl-3 border-l-2 border-rendah my-1.5 space-y-1 text-xs">
+                        <p class="text-[11px] text-muted font-normal">Sebaran per wilayah</p>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'rendah\')"></span>
+                        </div>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'rendah\')"></span>
+                        </div>
+                        <div class="flex justify-between text-muted font-normal text-xs">
+                            <span>Jalur A</span><span class="tabular-nums" x-text="getCountJalur(\'Jalur A\', \'rendah\')"></span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 2. Sedang --}}
+                <div>
+                    <div class="flex items-center justify-between py-1 cursor-pointer select-none rounded-lg hover:bg-paper/60 px-1 -mx-1 transition-colors"
+                         @click="toggleFilter('sedang')">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox"
+                                   :checked="filterSedang"
+                                   @click.stop="toggleFilter('sedang')"
+                                   class="h-4 w-4 rounded border-line text-brand focus:ring-0 cursor-pointer">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-sedang"></span>
+                            <span class="text-xs text-ink font-medium">Sedang</span>
+                        </div>
+                        <span class="text-xs text-muted tabular-nums" x-text="countSedang"></span>
+                    </div>
+
+                    {{-- Sebaran per wilayah untuk Sedang --}}
+                    <div x-show="filterSedang"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="ml-2 pl-3 border-l-2 border-sedang my-1.5 space-y-1 text-xs"
+                         style="display: none;">
+                        <p class="text-[11px] text-muted font-normal">Sebaran per wilayah</p>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'sedang\')"></span>
+                        </div>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'sedang\')"></span>
+                        </div>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Jalur A</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur A\', \'sedang\')"></span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 3. Tinggi --}}
+                <div>
+                    <div class="flex items-center justify-between py-1 cursor-pointer select-none rounded-lg hover:bg-paper/60 px-1 -mx-1 transition-colors"
+                         @click="toggleFilter('tinggi')">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox"
+                                   :checked="filterTinggi"
+                                   @click.stop="toggleFilter('tinggi')"
+                                   class="h-4 w-4 rounded border-line text-brand focus:ring-0 cursor-pointer">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-tinggi"></span>
+                            <span class="text-xs text-ink font-medium">Tinggi</span>
+                        </div>
+                        <span class="text-xs text-muted tabular-nums" x-text="countTinggi"></span>
+                    </div>
+
+                    {{-- Sebaran per wilayah untuk Tinggi --}}
+                    <div x-show="filterTinggi"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="ml-2 pl-3 border-l-2 border-tinggi my-1.5 space-y-1 text-xs"
+                         style="display: none;">
+                        <p class="text-[11px] text-muted font-normal">Sebaran per wilayah</p>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'tinggi\')"></span>
+                        </div>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'tinggi\')"></span>
+                        </div>
+                        <div class="flex justify-between text-ink font-semibold text-xs">
+                            <span>Jalur A</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur A\', \'tinggi\')"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- Filter Wilayah / Jalur --}}
-            <div class="border-t border-line pt-3">
-                <p class="text-xs font-bold uppercase tracking-wider text-muted mb-2">Wilayah Permukiman</p>
-                <div class="space-y-1.5 text-xs">
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_wilayah" value="Jalur A" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-brand focus:ring-brand/30 h-4 w-4">
-                        <span class="flex-1 font-medium text-ink">Jalur A</span>
-                        <span class="text-muted tabular-nums font-bold">15</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_wilayah" value="Jalur B" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-brand focus:ring-brand/30 h-4 w-4">
-                        <span class="flex-1 font-medium text-ink">Jalur B</span>
-                        <span class="text-muted tabular-nums font-bold">33</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-paper cursor-pointer">
-                        <input type="checkbox" name="filter_wilayah" value="Poros Trans" checked
-                               onchange="window.handleFilterChange()"
-                               class="rounded border-line text-brand focus:ring-brand/30 h-4 w-4">
-                        <span class="flex-1 font-medium text-ink">Poros Trans</span>
-                        <span class="text-muted tabular-nums font-bold">43</span>
-                    </label>
-                </div>
-            </div>
-
-            {{-- Tombol Atur Ulang & Info Counter --}}
-            <div class="border-t border-line pt-3 space-y-2">
-                <button type="button" onclick="window.resetFilter()"
-                        class="btn-secondary w-full !min-h-[34px] !py-1 !text-xs font-semibold">
-                    Atur ulang filter
-                </button>
-                <p id="filter-counter-text" class="text-center text-[11px] text-muted font-medium pt-1">
-                    Menampilkan 91 rumah tangga terverifikasi
+            {{-- Footer Counter --}}
+            <div class="border-t border-line/60 pt-2.5">
+                <p id="filter-counter-text" class="text-[11px] text-ink">
+                    Menampilkan <strong class="font-bold text-ink" x-text="totalTampil"></strong> dari <strong class="font-bold text-ink" x-text="dataWarga.length"></strong> rumah tangga
                 </p>
             </div>
         </div>
@@ -173,10 +268,10 @@
         </div>
     </div>
 
-    {{-- Tombol Tarik Bottom Sheet Mobile (Kiri Bawah) --}}
-    <div class="lg:hidden absolute bottom-4 left-4 z-20">
+    {{-- Tombol Tarik Bottom Sheet Mobile (Kiri Bawah, Di Atas Tombol Layers) --}}
+    <div class="lg:hidden absolute bottom-24 left-4 z-20">
         <button @click="mobileSheetOpen = !mobileSheetOpen"
-                class="btn-primary !min-h-[42px] !py-1.5 !px-3.5 !text-xs shadow-xl flex items-center gap-2 rounded-full">
+                class="btn-primary !min-h-[40px] !py-1.5 !px-3.5 !text-xs shadow-xl flex items-center gap-2 rounded-full font-bold">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             <span>Filter Peta</span>
         </button>
@@ -202,48 +297,70 @@
             <button @click="mobileSheetOpen = false" class="text-muted hover:text-ink p-1">✕</button>
         </div>
 
-        {{-- Checkboxes Kerentanan Mobile --}}
-        <div>
-            <p class="text-xs font-bold text-muted mb-2">Tingkat Kerentanan</p>
-            <div class="space-y-2 text-xs">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="filter_kerentanan" value="rendah" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-rendah">
-                    <span class="text-rendah">●</span>
-                    <span class="flex-1 font-medium text-ink">Kerentanan Rendah</span>
-                    <span class="font-bold tabular-nums">7</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="filter_kerentanan" value="sedang" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-sedang">
-                    <span class="text-sedang">▲</span>
-                    <span class="flex-1 font-medium text-ink">Kerentanan Sedang</span>
-                    <span class="font-bold tabular-nums">60</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="filter_kerentanan" value="tinggi" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-tinggi">
-                    <span class="text-tinggi">◆</span>
-                    <span class="flex-1 font-medium text-ink">Kerentanan Tinggi</span>
-                    <span class="font-bold tabular-nums">24</span>
-                </label>
+        {{-- Konten Filter Mobile (Screenshot 4) --}}
+        <div class="space-y-2">
+            {{-- 1. Rendah --}}
+            <div>
+                <div class="flex items-center justify-between py-1 cursor-pointer select-none"
+                     @click="toggleFilter('rendah')">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" :checked="filterRendah" @click.stop="toggleFilter('rendah')" class="h-4 w-4 rounded border-line text-brand">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-rendah"></span>
+                        <span class="text-xs text-ink font-medium">Rendah</span>
+                    </div>
+                    <span class="text-xs text-muted tabular-nums" x-text="countRendah"></span>
+                </div>
+                <div x-show="filterRendah" class="ml-2 pl-3 border-l-2 border-rendah my-1.5 space-y-1 text-xs">
+                    <p class="text-[10px] text-muted">Sebaran per wilayah</p>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'rendah\')"></span></div>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'rendah\')"></span></div>
+                    <div class="flex justify-between text-muted font-normal text-xs"><span>Jalur A</span><span class="tabular-nums" x-text="getCountJalur(\'Jalur A\', \'rendah\')"></span></div>
+                </div>
+            </div>
+
+            {{-- 2. Sedang --}}
+            <div>
+                <div class="flex items-center justify-between py-1 cursor-pointer select-none"
+                     @click="toggleFilter('sedang')">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" :checked="filterSedang" @click.stop="toggleFilter('sedang')" class="h-4 w-4 rounded border-line text-brand">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-sedang"></span>
+                        <span class="text-xs text-ink font-medium">Sedang</span>
+                    </div>
+                    <span class="text-xs text-muted tabular-nums" x-text="countSedang"></span>
+                </div>
+                <div x-show="filterSedang" class="ml-2 pl-3 border-l-2 border-sedang my-1.5 space-y-1 text-xs" style="display: none;">
+                    <p class="text-[10px] text-muted">Sebaran per wilayah</p>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'sedang\')"></span></div>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'sedang\')"></span></div>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Jalur A</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur A\', \'sedang\')"></span></div>
+                </div>
+            </div>
+
+            {{-- 3. Tinggi --}}
+            <div>
+                <div class="flex items-center justify-between py-1 cursor-pointer select-none"
+                     @click="toggleFilter('tinggi')">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" :checked="filterTinggi" @click.stop="toggleFilter('tinggi')" class="h-4 w-4 rounded border-line text-brand">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-tinggi"></span>
+                        <span class="text-xs text-ink font-medium">Tinggi</span>
+                    </div>
+                    <span class="text-xs text-muted tabular-nums" x-text="countTinggi"></span>
+                </div>
+                <div x-show="filterTinggi" class="ml-2 pl-3 border-l-2 border-tinggi my-1.5 space-y-1 text-xs" style="display: none;">
+                    <p class="text-[10px] text-muted">Sebaran per wilayah</p>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Jalur B</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur B\', \'tinggi\')"></span></div>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Poros Trans</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Poros Trans\', \'tinggi\')"></span></div>
+                    <div class="flex justify-between text-ink font-semibold text-xs"><span>Jalur A</span><span class="font-normal tabular-nums" x-text="getCountJalur(\'Jalur A\', \'tinggi\')"></span></div>
+                </div>
             </div>
         </div>
 
-        {{-- Checkboxes Wilayah Mobile --}}
-        <div class="border-t border-line pt-3">
-            <p class="text-xs font-bold text-muted mb-2">Wilayah</p>
-            <div class="grid grid-cols-3 gap-2 text-xs">
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" name="filter_wilayah" value="Jalur A" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-brand">
-                    <span class="font-medium text-ink">Jalur A</span>
-                </label>
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" name="filter_wilayah" value="Jalur B" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-brand">
-                    <span class="font-medium text-ink">Jalur B</span>
-                </label>
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" name="filter_wilayah" value="Poros Trans" checked onchange="window.handleFilterChange()" class="h-4 w-4 rounded border-line text-brand">
-                    <span class="font-medium text-ink">Poros</span>
-                </label>
-            </div>
+        <div class="border-t border-line/60 pt-2 text-center">
+            <p class="text-[11px] text-ink">
+                Menampilkan <strong class="font-bold text-ink" x-text="totalTampil"></strong> dari <strong class="font-bold text-ink" x-text="dataWarga.length"></strong> rumah tangga
+            </p>
         </div>
 
         <button @click="mobileSheetOpen = false" class="btn-primary w-full !min-h-[44px] !text-xs font-bold">
@@ -252,34 +369,56 @@
     </div>
 
     {{-- ============================================================
-         5. KONTROL MENGAMBANG KANAN (Basemap Switcher & Lokasi Saya)
+         5. TATA LETAK KONTROL PETA SESUAI GOOGLE MAPS (SCREENSHOT 1)
          ============================================================ --}}
-    <div class="absolute bottom-6 right-4 z-20 flex flex-col items-end gap-2 pointer-events-auto">
-        {{-- Pengalih Basemap (Satelit vs OSM) --}}
-        <div class="bg-surface rounded-lg border border-line shadow-lg p-1 flex items-center gap-1 text-xs">
+    {{-- POJOK KIRI BAWAH: Tombol Pengalih Basemap (Peta & Satelit) Sesuai Screenshot 2 --}}
+    <div class="absolute bottom-6 left-4 lg:left-6 z-20 pointer-events-auto select-none">
+        <div class="inline-flex items-center rounded-lg bg-white/95 backdrop-blur-sm shadow-md border border-line p-1 text-xs font-semibold">
             <button type="button"
                     @click="currentBasemap = 'osm'; window.toggleBasemap('osm')"
-                    :class="currentBasemap === 'osm' ? 'bg-brand text-white font-bold' : 'text-muted hover:text-ink'"
-                    class="px-2.5 py-1.5 rounded transition-colors">
+                    :class="currentBasemap === 'osm' ? 'bg-brand text-white font-bold shadow-xs' : 'text-slate-600 hover:text-ink hover:bg-slate-100 font-medium'"
+                    class="px-3.5 py-1.5 rounded-md text-xs transition-all">
                 Peta
             </button>
             <button type="button"
                     @click="currentBasemap = 'satellite'; window.toggleBasemap('satellite')"
-                    :class="currentBasemap === 'satellite' ? 'bg-brand text-white font-bold' : 'text-muted hover:text-ink'"
-                    class="px-2.5 py-1.5 rounded transition-colors">
+                    :class="currentBasemap === 'satellite' ? 'bg-brand text-white font-bold shadow-xs' : 'text-slate-600 hover:text-ink hover:bg-slate-100 font-medium'"
+                    class="px-3.5 py-1.5 rounded-md text-xs transition-all">
                 Satelit
             </button>
         </div>
+    </div>
 
-        {{-- Tombol Lokasi Saya --}}
+    {{-- POJOK KANAN BAWAH: Tombol Lokasi Saya & Tombol Zoom Vertikal (Tersusun Rapi Sesuai Screenshot 1) --}}
+    <div class="absolute bottom-6 right-4 lg:right-6 z-20 flex flex-col items-center gap-2 pointer-events-auto select-none">
+        {{-- Tombol Lokasi Saya (GPS Target Bulat/Rounded Bersih) --}}
         <button type="button"
                 id="btn-lokasi-saya"
                 onclick="window.ambilLokasiSaya()"
                 title="Cari lokasi saya saat ini"
-                class="h-10 w-10 bg-surface rounded-lg border border-line shadow-lg flex items-center justify-center text-ink hover:bg-paper transition-colors"
+                class="h-10 w-10 bg-white rounded-lg border border-line shadow-md flex items-center justify-center text-ink hover:text-brand hover:bg-paper active:scale-95 transition-all focus:outline-none"
                 aria-label="Lokasi saya">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
         </button>
+
+        {{-- Kontrol Zoom Vertikal Mandiri (+ dan -) --}}
+        <div class="bg-white rounded-lg border border-line shadow-md flex flex-col overflow-hidden">
+            <button type="button"
+                    onclick="window.sotaMapZoomIn()"
+                    title="Perbesar peta"
+                    class="h-9 w-10 flex items-center justify-center text-ink hover:bg-paper hover:text-brand active:bg-paper/80 transition-colors focus:outline-none"
+                    aria-label="Perbesar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="h-px w-full bg-line"></div>
+            <button type="button"
+                    onclick="window.sotaMapZoomOut()"
+                    title="Perkecil peta"
+                    class="h-9 w-10 flex items-center justify-center text-ink hover:bg-paper hover:text-brand active:bg-paper/80 transition-colors focus:outline-none"
+                    aria-label="Perkecil">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
     </div>
 
     {{-- ============================================================
@@ -322,67 +461,124 @@
             </div>
 
             {{-- Detail Informasi --}}
-            <div class="p-5 space-y-4">
+            <div class="p-5 space-y-4 max-h-[calc(90vh-220px)] overflow-y-auto">
                 {{-- Nama KK & Alamat --}}
-                <div>
-                    <h3 class="text-lg font-bold text-ink" x-text="selectedWarga ? 'Bpk. ' + selectedWarga.nama_kk : ''"></h3>
-                    <p class="text-xs text-muted mt-0.5" x-text="selectedWarga ? selectedWarga.jalur + ' · ' + selectedWarga.alamat : ''"></p>
+                <div class="border-b border-line pb-3">
+                    <h3 class="text-lg font-bold text-ink" x-text="selectedWarga ? selectedWarga.nama_kk : ''"></h3>
+                    <div class="flex items-center gap-1.5 text-xs text-muted mt-1">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded font-bold text-[11px] bg-brand/10 text-brand"
+                              x-text="selectedWarga ? selectedWarga.jalur : ''"></span>
+                        <span>&middot;</span>
+                        <span x-text="selectedWarga ? selectedWarga.alamat : ''"></span>
+                    </div>
+                    <template x-if="selectedWarga && selectedWarga.patokan">
+                        <p class="text-[11px] text-muted italic mt-1 flex items-center gap-1">
+                            <span class="font-semibold not-italic text-ink/70">Patokan:</span>
+                            <span x-text="selectedWarga.patokan"></span>
+                        </p>
+                    </template>
                 </div>
 
-                {{-- Grid Skor SVI & Klasifikasi (Sesuai PRD 8.3) --}}
+                {{-- Grid Skor SVI & Klasifikasi --}}
                 <div class="grid grid-cols-2 gap-3 bg-paper p-3 rounded-xl border border-line text-center">
                     <div>
                         <span class="text-[11px] text-muted block font-medium">Total Skor SVI</span>
                         <span class="text-2xl font-bold text-ink tabular-nums" x-text="selectedWarga ? selectedWarga.total_skor : ''"></span>
-                        <span class="text-[10px] text-muted block">(skala 9–27)</span>
+                        <span class="text-[10px] text-muted block mt-0.5">
+                            skala 9–27 &middot; Rata-rata <strong class="text-ink" x-text="selectedWarga ? selectedWarga.skor_rata_rata : ''"></strong>
+                        </span>
                     </div>
                     <div class="border-l border-line flex flex-col items-center justify-center">
                         <span class="text-[11px] text-muted block font-medium mb-1">Klasifikasi</span>
                         <template x-if="selectedWarga && selectedWarga.klasifikasi === 'tinggi'">
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-tinggi-tx bg-tinggi-bg border border-tinggi/30 px-2.5 py-1 rounded-full">
-                                <span>◆</span> <span>Kerentanan Tinggi</span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-tinggi-tx bg-tinggi-bg border border-tinggi/30 px-2.5 py-1 rounded-full">
+                                <span class="inline-block w-2 h-2 rounded-full bg-tinggi"></span> <span>Kerentanan Tinggi</span>
                             </span>
                         </template>
                         <template x-if="selectedWarga && selectedWarga.klasifikasi === 'sedang'">
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-sedang-tx bg-sedang-bg border border-sedang/30 px-2.5 py-1 rounded-full">
-                                <span>▲</span> <span>Kerentanan Sedang</span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-sedang-tx bg-sedang-bg border border-sedang/30 px-2.5 py-1 rounded-full">
+                                <span class="inline-block w-2 h-2 rounded-full bg-sedang"></span> <span>Kerentanan Sedang</span>
                             </span>
                         </template>
                         <template x-if="selectedWarga && selectedWarga.klasifikasi === 'rendah'">
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-rendah-tx bg-rendah-bg border border-rendah/30 px-2.5 py-1 rounded-full">
-                                <span>●</span> <span>Kerentanan Rendah</span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-rendah-tx bg-rendah-bg border border-rendah/30 px-2.5 py-1 rounded-full">
+                                <span class="inline-block w-2 h-2 rounded-full bg-rendah"></span> <span>Kerentanan Rendah</span>
                             </span>
                         </template>
                     </div>
                 </div>
 
-                {{-- Data Deskriptif Pendukung --}}
-                <div class="space-y-2 text-xs divide-y divide-line">
-                    <div class="flex justify-between py-1.5">
-                        <span class="text-muted">Pekerjaan</span>
-                        <span class="font-bold text-ink" x-text="selectedWarga ? selectedWarga.pekerjaan : ''"></span>
+                {{-- Rincian Lengkap 9 Variabel SVI --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between border-b border-line pb-1.5">
+                        <h4 class="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <span>Rincian 9 Variabel SVI</span>
+                        </h4>
+                        <span class="text-[10px] font-bold text-brand bg-brand/[0.08] px-2 py-0.5 rounded-full">
+                            Terverifikasi
+                        </span>
                     </div>
-                    <div class="flex justify-between py-1.5">
-                        <span class="text-muted">Jumlah anggota keluarga</span>
-                        <span class="font-bold text-ink" x-text="selectedWarga ? selectedWarga.jumlah_anggota + ' orang' : ''"></span>
-                    </div>
-                    <div class="flex justify-between py-1.5">
-                        <span class="text-muted">Titik Koordinat</span>
-                        <span class="font-bold text-ink tabular-nums" x-text="selectedWarga ? selectedWarga.latitude + ', ' + selectedWarga.longitude : ''"></span>
+
+                    <div class="space-y-1.5 text-xs divide-y divide-line/60">
+                        {{-- 1. Pendapatan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">1. Pendapatan Bulanan</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.pendapatan || 'Kurang dari Rp1.000.000 / bln'"></span>
+                        </div>
+                        {{-- 2. Pekerjaan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">2. Pekerjaan Utama KK</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.pekerjaan || 'Petani'"></span>
+                        </div>
+                        {{-- 3. Pendidikan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">3. Pendidikan Tertinggi</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.pendidikan || 'Tamat SMA / Sederajat'"></span>
+                        </div>
+                        {{-- 4. Jumlah Anggota Keluarga --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">4. Jumlah Anggota Keluarga</span>
+                            <span class="font-bold text-ink text-right" x-text="(selectedWarga?.jumlah_anggota || '4') + ' orang'"></span>
+                        </div>
+                        {{-- 5. Fisik Bangunan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">5. Fisik Bangunan (Dinding/Lantai)</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.fisik_bangunan || 'Dinding Kayu / Lantai Semen'"></span>
+                        </div>
+                        {{-- 6. Fasilitas Sanitasi --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">6. Fasilitas Sanitasi / MCK</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.sanitasi || 'MCK umum / bersama'"></span>
+                        </div>
+                        {{-- 7. Sumber Air --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">7. Sumber Air Bersih</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.sumber_air || 'Sumur gali'"></span>
+                        </div>
+                        {{-- 8. Pendapatan Tambahan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">8. Pendapatan Tambahan</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.pendapatan_tambahan || 'Tidak ada'"></span>
+                        </div>
+                        {{-- 9. Kepemilikan Lahan --}}
+                        <div class="flex items-start justify-between py-1.5 gap-2">
+                            <span class="text-muted shrink-0 font-medium">9. Kepemilikan Lahan & Rumah</span>
+                            <span class="font-bold text-ink text-right" x-text="selectedWarga?.kepemilikan_lahan || 'Milik sendiri'"></span>
+                        </div>
                     </div>
                 </div>
 
-                {{-- Footer Link Metode SVI --}}
-                <div class="pt-2 border-t border-line text-center">
-                    <p class="text-[11px] text-muted">
-                        Skor dihitung dari 9 variabel SVI.
-                        <a href="/tentang" class="text-brand font-bold hover:underline inline-flex items-center gap-0.5">
-                            Pelajari metodenya &rarr;
-                        </a>
-                    </p>
+                {{-- Titik Koordinat GPS --}}
+                <div class="flex items-center justify-between px-3 py-2 bg-paper rounded-lg border border-line text-xs">
+                    <span class="text-muted flex items-center gap-1.5 font-medium">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                        <span>Titik Koordinat (WGS 84):</span>
+                    </span>
+                    <span class="font-mono font-bold text-ink tabular-nums" x-text="selectedWarga ? selectedWarga.latitude + ', ' + selectedWarga.longitude : ''"></span>
                 </div>
             </div>
-        </div>
+        </div></div>
     </div>
 </div>
 @endsection

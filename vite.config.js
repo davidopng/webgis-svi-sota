@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/peta-publik.js',
                 'resources/js/ambil-koordinat.js',
                 'resources/js/dashboard-pimpinan.js',
+                'resources/js/infografis-publik.js',
             ],
             refresh: true,
         }),
