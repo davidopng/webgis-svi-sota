@@ -144,12 +144,22 @@
             get filteredData() {
                 return this.dataWarga.filter(d => {
                     const matchStatus = this.statusFilter === 'semua' || d.status === this.statusFilter;
-                    const matchJalur = this.jalurFilter === 'semua' ||
-                        d.jalur === this.jalurFilter ||
-                        (this.jalurFilter === 'Jalur A' && (d.jalur === 'Jalur A' || (d.jalur && d.jalur.includes('A')))) ||
-                        (this.jalurFilter === 'Jalur B' && (d.jalur === 'Jalur B' || (d.jalur && d.jalur.includes('B')))) ||
-                        (this.jalurFilter === 'Poros Trans' && (d.jalur && d.jalur.includes('Poros'))) ||
-                        (this.jalurFilter === 'Poros Sota PLBN' && (d.jalur && d.jalur.includes('PLBN')));
+                    let matchJalur = true;
+                    if (this.jalurFilter !== 'semua') {
+                        const r = (d.jalur || '').trim().toLowerCase();
+                        const t = this.jalurFilter.trim().toLowerCase();
+                        if (t === 'jalur a' || t.includes('jalur a')) {
+                            matchJalur = r === 'jalur a' || /^jalur\s*([1-6]a|a)$/i.test(r) || (/a$/i.test(r) && r.includes('jalur'));
+                        } else if (t === 'jalur b' || t.includes('jalur b')) {
+                            matchJalur = r === 'jalur b' || /^jalur\s*([1-7]b|b)$/i.test(r) || (/b$/i.test(r) && r.includes('jalur'));
+                        } else if (t.includes('plbn')) {
+                            matchJalur = r.includes('plbn');
+                        } else if (t.includes('poros trans') || t === 'poros trans') {
+                            matchJalur = r.includes('poros trans') || (r.includes('poros') && !r.includes('plbn'));
+                        } else {
+                            matchJalur = r.includes(t);
+                        }
+                    }
                     const matchKlas = this.klasifikasiFilter === 'semua' || d.klas === this.klasifikasiFilter || d.klasifikasi === this.klasifikasiFilter;
                     const query = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
                     const matchQuery = !query ||

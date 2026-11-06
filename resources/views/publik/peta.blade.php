@@ -58,7 +58,24 @@
         return this.dataWarga.filter(w => (w.klasifikasi || '').toLowerCase() === 'tinggi').length;
     },
     getCountJalur(jalurName, level) {
-        return this.dataWarga.filter(w => (w.jalur || '').includes(jalurName) && (w.klasifikasi || '').toLowerCase() === level).length;
+        return this.dataWarga.filter(w => {
+            if ((w.klasifikasi || '').toLowerCase() !== level) return false;
+            const r = (w.jalur || '').trim().toLowerCase();
+            const t = jalurName.trim().toLowerCase();
+            if (t === 'jalur a' || t.includes('jalur a')) {
+                return r === 'jalur a' || /^jalur\s*([1-6]a|a)$/i.test(r) || (/a$/i.test(r) && r.includes('jalur'));
+            }
+            if (t === 'jalur b' || t.includes('jalur b')) {
+                return r === 'jalur b' || /^jalur\s*([1-7]b|b)$/i.test(r) || (/b$/i.test(r) && r.includes('jalur'));
+            }
+            if (t.includes('plbn')) {
+                return r.includes('plbn');
+            }
+            if (t.includes('poros trans') || t === 'poros trans') {
+                return r.includes('poros trans') || (r.includes('poros') && !r.includes('plbn'));
+            }
+            return r.includes(t);
+        }).length;
     },
     get totalTampil() {
         let total = 0;

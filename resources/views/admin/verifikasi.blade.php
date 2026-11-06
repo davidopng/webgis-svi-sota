@@ -82,7 +82,22 @@
             get filteredAntrean() {
                 return this.antreanList.filter(item => {
                     const matchStatus = this.statusFilter === 'semua' || item.status === this.statusFilter;
-                    const matchJalur = this.jalurFilter === 'semua' || item.jalur === this.jalurFilter;
+                    let matchJalur = true;
+                    if (this.jalurFilter !== 'semua') {
+                        const r = (item.jalur || '').trim().toLowerCase();
+                        const t = this.jalurFilter.trim().toLowerCase();
+                        if (t === 'jalur a' || t.includes('jalur a')) {
+                            matchJalur = r === 'jalur a' || /^jalur\s*([1-6]a|a)$/i.test(r) || (/a$/i.test(r) && r.includes('jalur'));
+                        } else if (t === 'jalur b' || t.includes('jalur b')) {
+                            matchJalur = r === 'jalur b' || /^jalur\s*([1-7]b|b)$/i.test(r) || (/b$/i.test(r) && r.includes('jalur'));
+                        } else if (t.includes('plbn')) {
+                            matchJalur = r.includes('plbn');
+                        } else if (t.includes('poros trans') || t === 'poros trans') {
+                            matchJalur = r.includes('poros trans') || (r.includes('poros') && !r.includes('plbn'));
+                        } else {
+                            matchJalur = r.includes(t);
+                        }
+                    }
                     const matchKlas = this.klasifikasiFilter === 'semua' || item.klasifikasi === this.klasifikasiFilter;
                     const q = this.searchQuery ? this.searchQuery.toLowerCase().trim() : '';
                     const matchQuery = !q ||

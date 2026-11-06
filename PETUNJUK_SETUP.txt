@@ -1,7 +1,6 @@
 ================================================================================
 PETUNJUK DEPLOYMENT & SETUP WEBGIS SVI SOTA (KAMPUNG SOTA)
 Peneliti: David Leonardo Moento (Sistem Informasi - Universitas Musamus)
-Dosen Pembimbing: Fransiskus P. SI
 ================================================================================
 
 1. SPESIFIKASI SISTEM:

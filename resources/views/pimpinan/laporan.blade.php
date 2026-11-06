@@ -701,11 +701,22 @@ function panelLaporan() {
         // Filter Data Sesuai Opsi
         get filteredData() {
             const data = this.dataWarga.filter(item => {
-                const matchWilayah = this.wilayah === 'semua' || 
-                                     item.jalur === this.wilayah ||
-                                     (this.wilayah === 'Jalur A' && item.jalur.includes('A')) ||
-                                     (this.wilayah === 'Jalur B' && item.jalur.includes('B')) ||
-                                     (this.wilayah === 'Poros Trans' && item.jalur.includes('Poros'));
+                let matchWilayah = true;
+                if (this.wilayah !== 'semua') {
+                    const r = (item.jalur || '').trim().toLowerCase();
+                    const t = this.wilayah.trim().toLowerCase();
+                    if (t === 'jalur a' || t.includes('jalur a')) {
+                        matchWilayah = r === 'jalur a' || /^jalur\s*([1-6]a|a)$/i.test(r) || (/a$/i.test(r) && r.includes('jalur'));
+                    } else if (t === 'jalur b' || t.includes('jalur b')) {
+                        matchWilayah = r === 'jalur b' || /^jalur\s*([1-7]b|b)$/i.test(r) || (/b$/i.test(r) && r.includes('jalur'));
+                    } else if (t.includes('plbn')) {
+                        matchWilayah = r.includes('plbn');
+                    } else if (t.includes('poros trans') || t === 'poros trans') {
+                        matchWilayah = r.includes('poros trans') || (r.includes('poros') && !r.includes('plbn'));
+                    } else {
+                        matchWilayah = r.includes(t);
+                    }
+                }
                 const matchStatus = this.statusPenduduk === 'semua' || item.status_penduduk === this.statusPenduduk;
                 const matchKlas = (this.tingkatRendah && item.klas === 'rendah') ||
                                   (this.tingkatSedang && item.klas === 'sedang') ||

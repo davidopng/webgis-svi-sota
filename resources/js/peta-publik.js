@@ -151,17 +151,33 @@ export function initPetaPublik() {
             // 1. Filter Kerentanan
             const matchKerentanan = Array.isArray(activeFilters.kerentanan) && activeFilters.kerentanan.includes(warga.klasifikasi);
 
-            // 2. Filter Jalur / Wilayah
+            // 2. Filter Jalur / Wilayah (Smart Grouping 4 Koridor)
             let matchWilayah = true;
+            const checkJalurMatch = (targetWilayah, residentJalur) => {
+                if (!residentJalur) return false;
+                const r = residentJalur.trim().toLowerCase();
+                const t = targetWilayah.trim().toLowerCase();
+                if (t === 'semua') return true;
+                if (t === 'jalur a' || t.includes('jalur a')) {
+                    return r === 'jalur a' || /^jalur\s*([1-6]a|a)$/i.test(r) || (/a$/i.test(r) && r.includes('jalur'));
+                }
+                if (t === 'jalur b' || t.includes('jalur b')) {
+                    return r === 'jalur b' || /^jalur\s*([1-7]b|b)$/i.test(r) || (/b$/i.test(r) && r.includes('jalur'));
+                }
+                if (t.includes('plbn')) {
+                    return r.includes('plbn');
+                }
+                if (t.includes('poros trans') || t === 'poros trans') {
+                    return r.includes('poros trans') || (r.includes('poros') && !r.includes('plbn'));
+                }
+                return r.includes(t);
+            };
+
             if (activeFilters.jalur && activeFilters.jalur !== 'semua') {
-                matchWilayah = (warga.jalur || '').toLowerCase().includes(activeFilters.jalur.toLowerCase());
+                matchWilayah = checkJalurMatch(activeFilters.jalur, warga.jalur);
             } else if (activeFilters.wilayah) {
-                matchWilayah = activeFilters.wilayah.includes('semua') ||
-                    activeFilters.wilayah.includes(warga.jalur) ||
-                    (warga.wilayah && activeFilters.wilayah.includes(warga.wilayah)) ||
-                    (warga.jalur && warga.jalur.includes('A') && activeFilters.wilayah.includes('Jalur A')) ||
-                    (warga.jalur && warga.jalur.includes('B') && activeFilters.wilayah.includes('Jalur B')) ||
-                    (warga.jalur && warga.jalur.toLowerCase().includes('poros') && (activeFilters.wilayah.includes('Poros Trans') || activeFilters.wilayah.includes('Poros Sota PLBN')));
+                const wList = Array.isArray(activeFilters.wilayah) ? activeFilters.wilayah : [activeFilters.wilayah];
+                matchWilayah = wList.includes('semua') || wList.some(w => checkJalurMatch(w, warga.jalur));
             }
 
             // 3. Filter Status Kependudukan (Tetap / Tidak Tetap)
