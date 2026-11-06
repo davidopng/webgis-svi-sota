@@ -677,16 +677,16 @@
             {{-- Foto Rumah (16:9) --}}
             <div class="relative aspect-video bg-paper border-b border-line flex items-center justify-center overflow-hidden">
                 <template x-if="selectedWarga && selectedWarga.foto_rumah">
-                    <img :src="selectedWarga.foto_rumah" alt="Foto Rumah" class="w-full h-full object-cover">
+                    <img :src="selectedWarga.foto_rumah" alt="Foto Rumah" class="w-full h-full object-cover"
+                         @error="$event.target.style.display='none'; $el.closest('.relative').querySelector('.fallback-no-photo').style.display='flex'">
                 </template>
-                <template x-if="!selectedWarga || !selectedWarga.foto_rumah">
-                    <div class="flex flex-col items-center justify-center text-muted gap-1.5 p-4 text-center">
-                        <div class="h-10 w-10 rounded-full bg-line/60 flex items-center justify-center text-muted">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                        </div>
-                        <span class="text-xs font-medium">Foto belum tersedia</span>
+                <div class="fallback-no-photo flex-col items-center justify-center text-muted gap-1.5 p-4 text-center w-full h-full"
+                     :style="(!selectedWarga || !selectedWarga.foto_rumah) ? 'display: flex;' : 'display: none;'">
+                    <div class="h-10 w-10 rounded-full bg-line/60 flex items-center justify-center text-muted">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </div>
-                </template>
+                    <span class="text-xs font-medium">Foto Rumah / Bangunan</span>
+                </div>
 
                 {{-- Tombol Tutup [×] --}}
                 <button type="button" @click="detailModal = false"
@@ -721,7 +721,7 @@
                         <span class="text-[11px] text-muted block font-medium">Total Skor SVI</span>
                         <span class="text-2xl font-bold text-ink tabular-nums" x-text="selectedWarga ? selectedWarga.total_skor : ''"></span>
                         <span class="text-[10px] text-muted block mt-0.5">
-                            skala 9–27 &middot; Rata-rata <strong class="text-ink" x-text="selectedWarga ? selectedWarga.skor_rata_rata : ''"></strong>
+                            skala 9–27 &middot; Rata-rata <strong class="text-ink" x-text="selectedWarga ? (selectedWarga.skor_rata_rata || (selectedWarga.total_skor ? (selectedWarga.total_skor / 9).toFixed(2).replace('.', ',') : '-')) : ''"></strong>
                         </span>
                     </div>
                     <div class="border-l border-line flex flex-col items-center justify-center">

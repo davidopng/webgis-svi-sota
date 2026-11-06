@@ -13,7 +13,15 @@ class DataPenduduk extends Model
 
     protected $guarded = ['id'];
 
-    protected $appends = ['klasifikasi_label', 'rt_rw', 'nama_penginput'];
+    protected $appends = ['klasifikasi_label', 'rt_rw', 'nama_penginput', 'skor_rata_rata'];
+
+    public function getSkorRataRataAttribute(): string
+    {
+        if ($this->total_skor) {
+            return number_format($this->total_skor / 9, 2, ',', '.');
+        }
+        return '-';
+    }
 
     public function creator()
     {
