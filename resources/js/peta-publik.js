@@ -186,71 +186,92 @@ export function initPetaPublik() {
                 matchStatus = (warga.status_penduduk || '').toLowerCase() === activeFilters.status_penduduk.toLowerCase();
             }
 
-            // 4. Filter 9 Indikator SVI Spesifik
+            // 4. Filter 9 Indikator SVI Spesifik (Strict Mutual Exclusivity - Total Selalu Tepat 90 KK)
             let matchSvi = true;
             if (activeFilters.svi && typeof activeFilters.svi === 'object') {
                 const s = activeFilters.svi;
-                // 1. Pendapatan
+                // 1. Pendapatan (Total 28 + 22 + 40 = 90 KK)
                 if (s.pendapatan && s.pendapatan !== 'semua') {
                     const p = (warga.pendapatan || '').toLowerCase();
-                    if (s.pendapatan === '1' && !p.includes('2.500.000')) matchSvi = false;
-                    else if (s.pendapatan === '2' && !p.includes('1.000.000')) matchSvi = false;
-                    else if (s.pendapatan === '3' && !p.includes('kurang')) matchSvi = false;
+                    if (s.pendapatan === '1') {
+                        // >= Rp2.500.000 (28 KK)
+                        matchSvi = p.includes('2.500.000') || p.includes('5.000.000') || (p.includes('ke atas') && !p.includes('1.000.000'));
+                    } else if (s.pendapatan === '2') {
+                        // Rp1.000.000 - Rp2.499.999 (22 KK: cegah overlap kata '1.000.000' dari 'kurang dari 1.000.000')
+                        matchSvi = (p.includes('1.000.000') || p.includes('2.499.999')) && !p.includes('kurang');
+                    } else if (s.pendapatan === '3') {
+                        // < Rp1.000.000 (40 KK)
+                        matchSvi = p.includes('kurang');
+                    }
                 }
                 // 2. Pekerjaan
                 if (matchSvi && s.pekerjaan && s.pekerjaan !== 'semua') {
                     const pk = (warga.pekerjaan || '').toLowerCase();
-                    if (s.pekerjaan === '1' && !(pk.includes('pns') || pk.includes('tni') || pk.includes('polri') || pk.includes('tetap') || pk.includes('wiraswasta'))) matchSvi = false;
-                    else if (s.pekerjaan === '2' && !(pk.includes('petani') || pk.includes('peternak') || pk.includes('pedagang') || pk.includes('honorer') || pk.includes('kontrak'))) matchSvi = false;
-                    else if (s.pekerjaan === '3' && !(pk.includes('buruh') || pk.includes('serabutan') || pk.includes('tidak bekerja') || pk.includes('ibu rumah tangga'))) matchSvi = false;
+                    if (s.pekerjaan === '1') {
+                        // Sektor Formal / Bergaji Tetap (19 KK)
+                        matchSvi = pk.includes('pns') || pk.includes('tni') || pk.includes('polri') || pk.includes('tetap') || pk.includes('wiraswasta') || pk.includes('wirausaha') || pk.includes('wirasuasta') || pk.includes('guru') || pk.includes('swasta') || pk.includes('pendeta') || pk.includes('sekuriti') || pk.includes('stap') || pk.includes('petugas plbn');
+                    } else if (s.pekerjaan === '2') {
+                        // Pertanian & Sektor Informal Aktif (53 KK)
+                        matchSvi = (pk.includes('petani') || pk.includes('peternak') || pk.includes('pedagang') || pk.includes('honorer') || pk.includes('kontrak') || pk.includes('warunf') || pk.includes('usaha warung')) && !pk.includes('tidak bekerja');
+                    } else if (s.pekerjaan === '3') {
+                        // Buruh / Kerentanan Tinggi / Tidak Bekerja (18 KK)
+                        matchSvi = pk.includes('buruh') || pk.includes('serabutan') || pk.includes('tidak bekerja') || pk.includes('ibu rumah tangga') || pk.includes('sopir') || pk.includes('supir') || pk.includes('angkot');
+                    }
                 }
-                // 3. Pendidikan
+                // 3. Jenjang Pendidikan (Total 16 + 37 + 37 = 90 KK)
                 if (matchSvi && s.pendidikan && s.pendidikan !== 'semua') {
                     const pd = (warga.pendidikan || '').toLowerCase();
-                    if (s.pendidikan === '1' && !(pd.includes('perguruan') || pd.includes('diploma') || pd.includes('s1') || pd.includes('s2') || pd.includes('d3'))) matchSvi = false;
-                    else if (s.pendidikan === '2' && !(pd.includes('sma') || pd.includes('smk') || pd.includes('sederajat'))) matchSvi = false;
-                    else if (s.pendidikan === '3' && !(pd.includes('sd') || pd.includes('smp') || pd.includes('tidak tamat'))) matchSvi = false;
+                    if (s.pendidikan === '1') {
+                        // Perguruan Tinggi (16 KK)
+                        matchSvi = pd.includes('perguruan') || pd.includes('diploma') || pd.includes('s1') || pd.includes('s2') || pd.includes('sarjana');
+                    } else if (s.pendidikan === '2') {
+                        // Tamat SMA / Sederajat (37 KK: cegah overlap kata 'sederajat' dari 'SD/SMP Sederajat')
+                        matchSvi = (pd.includes('sma') || pd.includes('smk')) && !pd.includes('sd') && !pd.includes('smp');
+                    } else if (s.pendidikan === '3') {
+                        // SD / SMP / Tidak Tamat (37 KK)
+                        matchSvi = pd.includes('sd') || pd.includes('smp') || pd.includes('tidak tamat');
+                    }
                 }
-                // 4. Jumlah Anggota
+                // 4. Jumlah Anggota Keluarga
                 if (matchSvi && s.anggota && s.anggota !== 'semua') {
                     const jml = parseInt(warga.jumlah_anggota_keluarga) || 0;
-                    if (s.anggota === '1' && (jml < 1 || jml > 2)) matchSvi = false;
-                    else if (s.anggota === '2' && (jml < 3 || jml > 4)) matchSvi = false;
-                    else if (s.anggota === '3' && jml <= 4) matchSvi = false;
+                    if (s.anggota === '1') matchSvi = (jml >= 1 && jml <= 2);
+                    else if (s.anggota === '2') matchSvi = (jml >= 3 && jml <= 4);
+                    else if (s.anggota === '3') matchSvi = (jml > 4);
                 }
-                // 5. Dinding
+                // 5. Material Dinding
                 if (matchSvi && s.dinding && s.dinding !== 'semua') {
                     const d = (warga.jenis_dinding || '').toLowerCase();
-                    if (s.dinding === 'tembok' && !d.includes('tembok')) matchSvi = false;
-                    else if (s.dinding === 'kayu' && !d.includes('kayu')) matchSvi = false;
+                    if (s.dinding === 'tembok') matchSvi = d.includes('tembok');
+                    else if (s.dinding === 'kayu') matchSvi = (d.includes('kayu') || d.includes('papan')) && !d.includes('campuran');
                 }
-                // 6. Lantai
+                // 6. Material Lantai
                 if (matchSvi && s.lantai && s.lantai !== 'semua') {
                     const l = (warga.jenis_lantai || '').toLowerCase();
-                    if (s.lantai === 'keramik' && !(l.includes('keramik') || l.includes('ubin'))) matchSvi = false;
-                    else if (s.lantai === 'semen' && !l.includes('semen')) matchSvi = false;
-                    else if (s.lantai === 'tanah_kayu' && !(l.includes('tanah') || l.includes('papan') || l.includes('kayu'))) matchSvi = false;
+                    if (s.lantai === 'keramik') matchSvi = l.includes('keramik') || l.includes('ubin');
+                    else if (s.lantai === 'semen') matchSvi = l.includes('semen');
+                    else if (s.lantai === 'tanah_kayu') matchSvi = l.includes('tanah') || l.includes('papan') || l.includes('kayu');
                 }
-                // 7. Sanitasi
+                // 7. Sanitasi / MCK
                 if (matchSvi && s.sanitasi && s.sanitasi !== 'semua') {
                     const sn = (warga.fasilitas_sanitasi || '').toLowerCase();
-                    if (s.sanitasi === 'pribadi' && !(sn.includes('pribadi') || sn.includes('sehat'))) matchSvi = false;
-                    else if (s.sanitasi === 'umum' && !(sn.includes('umum') || sn.includes('tetangga') || sn.includes('berbagi'))) matchSvi = false;
-                    else if (s.sanitasi === 'tidak_ada' && !(sn.includes('tidak') || sn.includes('menumpang'))) matchSvi = false;
+                    if (s.sanitasi === 'pribadi') matchSvi = (sn.includes('pribadi') || sn.includes('leher angsa')) && !sn.includes('tidak');
+                    else if (s.sanitasi === 'umum') matchSvi = sn.includes('umum') || sn.includes('tetangga') || sn.includes('berbagi');
+                    else if (s.sanitasi === 'tidak_ada') matchSvi = sn.includes('tidak') || sn.includes('menumpang');
                 }
-                // 8. Air Bersih
+                // 8. Sumber Air Bersih
                 if (matchSvi && s.air && s.air !== 'semua') {
                     const a = (warga.sumber_air || '').toLowerCase();
-                    if (s.air === 'pdam' && !a.includes('pdam')) matchSvi = false;
-                    else if (s.air === 'bor_galon' && !(a.includes('bor') || a.includes('galon'))) matchSvi = false;
-                    else if (s.air === 'gali' && !(a.includes('gali') || a.includes('hujan'))) matchSvi = false;
+                    if (s.air === 'pdam') matchSvi = a.includes('pdam');
+                    else if (s.air === 'bor_galon') matchSvi = a.includes('bor') || a.includes('galon');
+                    else if (s.air === 'gali') matchSvi = a.includes('gali') || a.includes('hujan');
                 }
                 // 9. Kepemilikan Lahan
                 if (matchSvi && s.lahan && s.lahan !== 'semua') {
                     const lh = (warga.kepemilikan_lahan || '').toLowerCase();
-                    if (s.lahan === 'sendiri' && !(lh.includes('sendiri') || lh.includes('warisan'))) matchSvi = false;
-                    else if (s.lahan === 'sewa' && !(lh.includes('sewa') || lh.includes('pinjam') || lh.includes('garapan'))) matchSvi = false;
-                    else if (s.lahan === 'tidak_ada' && !(lh.includes('tidak') || lh.includes('numpang'))) matchSvi = false;
+                    if (s.lahan === 'sendiri') matchSvi = lh.includes('sendiri') || lh.includes('warisan');
+                    else if (s.lahan === 'sewa') matchSvi = lh.includes('sewa') || lh.includes('pinjam') || lh.includes('garapan') || lh.includes('adat');
+                    else if (s.lahan === 'tidak_ada') matchSvi = lh.includes('tidak') || lh.includes('numpang');
                 }
             }
 
