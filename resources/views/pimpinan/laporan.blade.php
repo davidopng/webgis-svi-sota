@@ -175,7 +175,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-line no-print">
         <div>
             <h2 class="text-xl font-bold text-ink">Unduh Laporan Rekapitulasi</h2>
-            <p class="text-help text-xs mt-0.5">Penyusunan berkas cetak resmi kedinasan dan spreadsheet digital rekapitulasi kerentanan warga Kampung Sota untuk keperluan arsip kampung, penetapan sasaran bansos, dan koordinasi dengan Dinas Sosial.</p>
+            <p class="text-help text-xs mt-0.5">Penyusunan berkas cetak resmi kedinasan dan spreadsheet digital rekapitulasi kerentanan sosial ekonomi warga Kampung Sota untuk keperluan arsip kampung dan analisis tematik.</p>
         </div>
     </div>
 
@@ -255,7 +255,7 @@
                             <input type="checkbox" x-model="tingkatTinggi" class="rounded border-rose-400 text-rose-600 focus:ring-rose-500 h-4 w-4">
                             <span class="text-xs font-bold text-ink flex items-center gap-2">
                                 <span class="w-3 h-3 rounded-full bg-rose-600 shadow-xs"></span>
-                                Kerentanan Tinggi <span class="text-tinggi-tx font-bold">(Prioritas Bansos)</span>
+                                Kerentanan Tinggi
                             </span>
                         </label>
                     </div>
@@ -274,14 +274,14 @@
                         </label>
 
                         <label class="flex items-center gap-2.5 cursor-pointer select-none hover:text-brand transition-colors">
-                            <input type="checkbox" x-model="kolomKarakteristik" class="rounded border-line text-brand h-4 w-4">
-                            <span class="font-medium text-ink">Karakteristik SVI (Pekerjaan Utama &amp; Pendapatan Bulanan)</span>
-                        </label>
-
-                        <label class="flex items-center gap-2.5 cursor-pointer select-none hover:text-brand transition-colors">
                             <input type="checkbox" x-model="kolomSkor" class="rounded border-line text-brand h-4 w-4">
                             <span class="font-medium text-ink">Total Skor SVI &amp; Lencana Klasifikasi Kerentanan</span>
                         </label>
+
+                        <div class="pt-2 border-t border-line/60 flex items-center justify-between text-[11px]">
+                            <span class="text-muted">Kolom Indikator SVI Terpilih:</span>
+                            <span class="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full" x-text="activeKolomSviCount + ' Kolom Aktif (Diatur di Bawah)'"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -321,7 +321,7 @@
         </div>
 
         {{-- ============================================================
-             FILTER SPESIFIK 9 INDIKATOR SVI (KUESIONER LAPANGAN)
+             FILTER & PILIHAN KOLOM 9 INDIKATOR SVI
              ============================================================ --}}
         <div class="border-t border-line pt-4 space-y-3">
             <div class="flex items-center justify-between cursor-pointer select-none bg-paper/60 hover:bg-paper p-3 rounded-xl border border-line transition-all"
@@ -332,22 +332,21 @@
                     </span>
                     <div>
                         <h4 class="text-xs font-bold text-ink flex items-center gap-2">
-                            <span>Filter Spesifik Berdasarkan 9 Indikator SVI</span>
-                            <span class="text-[10px] font-normal text-muted">(Opsional untuk sasaran bansos/program tematik)</span>
+                            <span>Filter &amp; Pilihan Kolom 9 Indikator SVI</span>
                         </h4>
-                        <p class="text-[11px] text-muted">Saring daftar cetak berdasarkan pekerjaan, pendapatan bulanan, jenis fisik bangunan, MCK, lahan, dll.</p>
+                        <p class="text-[11px] text-muted">Centang indikator yang ingin ditampilkan di kolom tabel, dan pilih opsi dropdown jika ingin memfilter data responden.</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
                     <template x-if="activeSviCount > 0">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand text-white shadow-xs"
-                              x-text="activeSviCount + ' Filter SVI Aktif'"></span>
+                              x-text="activeSviCount + ' Filter Aktif'"></span>
                     </template>
                     <template x-if="activeSviCount > 0">
                         <button type="button"
                                 @click.stop="resetSviFilter()"
                                 class="text-[11px] text-rose-600 hover:text-rose-800 font-bold px-2 py-0.5 rounded hover:bg-rose-50 transition-colors">
-                            Reset SVI
+                            Reset Filter
                         </button>
                     </template>
                     <span class="text-muted text-xs font-bold transition-transform duration-200"
@@ -355,98 +354,205 @@
                 </div>
             </div>
 
-            {{-- Grid 9 Dropdown Indikator SVI --}}
-            <div x-show="openSviAccordion"
-                 x-transition
-                 class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-paper/30 rounded-xl border border-line/80">
-                {{-- 1. Pendapatan --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">1. Rentang Pendapatan</label>
-                    <select x-model="sviFilter.pendapatan" class="input-select w-full text-xs" :class="sviFilter.pendapatan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Rentang</option>
-                        <option value="1">Rp2.500.000 ke atas</option>
-                        <option value="2">Rp1.000.000 – Rp2.499.999</option>
-                        <option value="3">Kurang dari Rp1.000.000</option>
-                    </select>
+            {{-- Isi Accordion: Pilihan Cepat Kolom & Grid 9 Indikator --}}
+            <div x-show="openSviAccordion" x-transition class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] text-muted font-medium">Pilihan Cepat Tampil Kolom:</span>
+                        <button type="button" @click="pilihSemuaKolomSvi()" class="px-2 py-1 rounded bg-surface hover:bg-brand/10 hover:text-brand border border-line text-[11px] font-semibold transition-colors">Centang Semua (9 Kolom)</button>
+                        <button type="button" @click="pilihStandarKolomSvi()" class="px-2 py-1 rounded bg-surface hover:bg-brand/10 hover:text-brand border border-line text-[11px] font-semibold transition-colors">Standar (Pekerjaan &amp; Pendapatan)</button>
+                        <button type="button" @click="resetKolomSvi()" class="px-2 py-1 rounded bg-surface hover:bg-rose-50 hover:text-rose-600 border border-line text-[11px] font-semibold transition-colors">Hapus Semua Kolom SVI</button>
+                    </div>
                 </div>
-                {{-- 2. Pekerjaan --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">2. Pekerjaan Utama</label>
-                    <select x-model="sviFilter.pekerjaan" class="input-select w-full text-xs" :class="sviFilter.pekerjaan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Pekerjaan</option>
-                        <option value="1">Formal / Tetap / PNS / Wiraswasta</option>
-                        <option value="2">Petani / Peternak / Honorer</option>
-                        <option value="3">Buruh / Serabutan / Tidak Bekerja</option>
-                    </select>
-                </div>
-                {{-- 3. Pendidikan --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">3. Jenjang Pendidikan</label>
-                    <select x-model="sviFilter.pendidikan" class="input-select w-full text-xs" :class="sviFilter.pendidikan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Pendidikan</option>
-                        <option value="1">Perguruan Tinggi (Diploma/S1/S2)</option>
-                        <option value="2">Tamat SMA / Sederajat</option>
-                        <option value="3">SD / SMP / Tidak Tamat</option>
-                    </select>
-                </div>
-                {{-- 4. Anggota Keluarga --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">4. Jumlah Anggota Keluarga</label>
-                    <select x-model="sviFilter.anggota" class="input-select w-full text-xs" :class="sviFilter.anggota !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Jumlah Anggota</option>
-                        <option value="1">1 – 2 orang</option>
-                        <option value="2">3 – 4 orang</option>
-                        <option value="3">&gt; 4 orang</option>
-                    </select>
-                </div>
-                {{-- 5. Material Dinding --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">5. Material Dinding</label>
-                    <select x-model="sviFilter.dinding" class="input-select w-full text-xs" :class="sviFilter.dinding !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Dinding</option>
-                        <option value="tembok">Tembok Permanen</option>
-                        <option value="kayu">Kayu / Kulit Kayu</option>
-                    </select>
-                </div>
-                {{-- 6. Material Lantai --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">6. Material Lantai</label>
-                    <select x-model="sviFilter.lantai" class="input-select w-full text-xs" :class="sviFilter.lantai !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Lantai</option>
-                        <option value="keramik">Keramik / Ubin</option>
-                        <option value="semen">Semen</option>
-                        <option value="tanah_kayu">Tanah / Papan Kayu</option>
-                    </select>
-                </div>
-                {{-- 7. Fasilitas Sanitasi (MCK) --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">7. Fasilitas Sanitasi (MCK)</label>
-                    <select x-model="sviFilter.sanitasi" class="input-select w-full text-xs" :class="sviFilter.sanitasi !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Sanitasi</option>
-                        <option value="pribadi">MCK Pribadi / Jamban Sehat</option>
-                        <option value="umum">MCK Umum / Berbagi Tetangga</option>
-                        <option value="tidak_ada">Tidak Ada Sanitasi / Menumpang</option>
-                    </select>
-                </div>
-                {{-- 8. Sumber Air Bersih --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">8. Sumber Air Bersih</label>
-                    <select x-model="sviFilter.air" class="input-select w-full text-xs" :class="sviFilter.air !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Sumber Air</option>
-                        <option value="pdam">PDAM</option>
-                        <option value="bor_galon">Sumur Bor / Air Galon</option>
-                        <option value="gali">Sumur Gali / Hujan</option>
-                    </select>
-                </div>
-                {{-- 9. Legalitas Lahan & Rumah --}}
-                <div>
-                    <label class="block text-[11px] font-semibold text-ink mb-1">9. Legalitas Lahan &amp; Rumah</label>
-                    <select x-model="sviFilter.lahan" class="input-select w-full text-xs" :class="sviFilter.lahan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
-                        <option value="semua">Semua Kepemilikan</option>
-                        <option value="sendiri">Milik Sendiri / Warisan</option>
-                        <option value="sewa">Sewa / Garapan / Pinjam Pakai</option>
-                        <option value="tidak_ada">Tidak Ada Lahan / Menumpang</option>
-                    </select>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-paper/30 rounded-xl border border-line/80">
+                    {{-- 1. Pendapatan --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.pendapatan || sviFilter.pendapatan !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.pendapatan" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">1. Pendapatan Bulanan</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.pendapatan">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.pendapatan"
+                                @change="if (sviFilter.pendapatan !== 'semua') kolomSvi.pendapatan = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.pendapatan !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Rentang</option>
+                            <option value="1">Rp2.500.000 ke atas</option>
+                            <option value="2">Rp1.000.000 – Rp2.499.999</option>
+                            <option value="3">Kurang dari Rp1.000.000</option>
+                        </select>
+                    </div>
+
+                    {{-- 2. Pekerjaan --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.pekerjaan || sviFilter.pekerjaan !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.pekerjaan" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">2. Pekerjaan Utama</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.pekerjaan">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.pekerjaan"
+                                @change="if (sviFilter.pekerjaan !== 'semua') kolomSvi.pekerjaan = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.pekerjaan !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Pekerjaan</option>
+                            <option value="1">Formal / Tetap / PNS / Wiraswasta</option>
+                            <option value="2">Petani / Peternak / Honorer</option>
+                            <option value="3">Buruh / Serabutan / Tidak Bekerja</option>
+                        </select>
+                    </div>
+
+                    {{-- 3. Pendidikan --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.pendidikan || sviFilter.pendidikan !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.pendidikan" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">3. Jenjang Pendidikan</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.pendidikan">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.pendidikan"
+                                @change="if (sviFilter.pendidikan !== 'semua') kolomSvi.pendidikan = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.pendidikan !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Pendidikan</option>
+                            <option value="1">Perguruan Tinggi (Diploma/S1/S2)</option>
+                            <option value="2">Tamat SMA / Sederajat</option>
+                            <option value="3">SD / SMP / Tidak Tamat</option>
+                        </select>
+                    </div>
+
+                    {{-- 4. Anggota Keluarga --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.anggota || sviFilter.anggota !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.anggota" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">4. Jumlah Anggota Keluarga</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.anggota">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.anggota"
+                                @change="if (sviFilter.anggota !== 'semua') kolomSvi.anggota = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.anggota !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Jumlah Anggota</option>
+                            <option value="1">1 – 2 orang</option>
+                            <option value="2">3 – 4 orang</option>
+                            <option value="3">&gt; 4 orang</option>
+                        </select>
+                    </div>
+
+                    {{-- 5. Material Dinding --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.dinding || sviFilter.dinding !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.dinding" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">5. Material Dinding</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.dinding">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.dinding"
+                                @change="if (sviFilter.dinding !== 'semua') kolomSvi.dinding = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.dinding !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Dinding</option>
+                            <option value="tembok">Tembok Permanen</option>
+                            <option value="kayu">Kayu / Kulit Kayu</option>
+                        </select>
+                    </div>
+
+                    {{-- 6. Material Lantai --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.lantai || sviFilter.lantai !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.lantai" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">6. Material Lantai</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.lantai">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.lantai"
+                                @change="if (sviFilter.lantai !== 'semua') kolomSvi.lantai = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.lantai !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Lantai</option>
+                            <option value="keramik">Keramik / Ubin</option>
+                            <option value="semen">Semen</option>
+                            <option value="tanah_kayu">Tanah / Papan Kayu</option>
+                        </select>
+                    </div>
+
+                    {{-- 7. Fasilitas Sanitasi (MCK) --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.sanitasi || sviFilter.sanitasi !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.sanitasi" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">7. Fasilitas Sanitasi (MCK)</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.sanitasi">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.sanitasi"
+                                @change="if (sviFilter.sanitasi !== 'semua') kolomSvi.sanitasi = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.sanitasi !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Sanitasi</option>
+                            <option value="pribadi">MCK Pribadi / Jamban Sehat</option>
+                            <option value="umum">MCK Umum / Berbagi Tetangga</option>
+                            <option value="tidak_ada">Tidak Ada Sanitasi / Menumpang</option>
+                        </select>
+                    </div>
+
+                    {{-- 8. Sumber Air Bersih --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.air || sviFilter.air !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.air" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">8. Sumber Air Bersih</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.air">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.air"
+                                @change="if (sviFilter.air !== 'semua') kolomSvi.air = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.air !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Sumber Air</option>
+                            <option value="pdam">PDAM</option>
+                            <option value="bor_galon">Sumur Bor / Air Galon</option>
+                            <option value="gali">Sumur Gali / Hujan</option>
+                        </select>
+                    </div>
+
+                    {{-- 9. Legalitas Lahan & Rumah --}}
+                    <div class="p-2.5 rounded-xl border transition-all"
+                         :class="kolomSvi.lahan || sviFilter.lahan !== 'semua' ? 'border-brand/40 bg-brand/5 shadow-xs' : 'border-line/70 bg-paper/40'">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="kolomSvi.lahan" class="rounded border-line text-brand focus:ring-brand h-4 w-4">
+                                <span class="text-xs font-bold text-ink">9. Legalitas Lahan &amp; Rumah</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-brand" x-show="kolomSvi.lahan">Kolom Aktif</span>
+                        </div>
+                        <select x-model="sviFilter.lahan"
+                                @change="if (sviFilter.lahan !== 'semua') kolomSvi.lahan = true"
+                                class="input-select w-full text-xs"
+                                :class="sviFilter.lahan !== 'semua' ? 'border-brand bg-white font-bold text-brand ring-1 ring-brand/30' : ''">
+                            <option value="semua">Semua Kepemilikan</option>
+                            <option value="sendiri">Milik Sendiri / Warisan</option>
+                            <option value="sewa">Sewa / Garapan / Pinjam Pakai</option>
+                            <option value="tidak_ada">Tidak Ada Lahan / Menumpang</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -522,7 +628,15 @@
                         <th class="py-3 px-4">Nama KK &amp; Alamat</th>
                         <th class="py-3 px-4">Jalur Detail</th>
                         <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4" x-show="kolomKarakteristik">Karakteristik SVI (Pekerjaan &amp; Pendapatan)</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.pendapatan">Pendapatan Bulanan</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.pekerjaan">Pekerjaan Utama</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.pendidikan">Jenjang Pendidikan</th>
+                        <th class="py-3 px-4 text-center" x-show="kolomSvi.anggota">Jml Anggota</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.dinding">Material Dinding</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.lantai">Material Lantai</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.sanitasi">Fasilitas Sanitasi</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.air">Sumber Air Bersih</th>
+                        <th class="py-3 px-4" x-show="kolomSvi.lahan">Legalitas Lahan/Rumah</th>
                         <th class="py-3 px-4 text-center" x-show="kolomSkor">Total Skor</th>
                         <th class="py-3 px-4" x-show="kolomSkor">Klasifikasi</th>
                     </tr>
@@ -543,10 +657,15 @@
                                       :class="item.status_penduduk === 'Tetap' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
                                       x-text="item.status_penduduk"></span>
                             </td>
-                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomKarakteristik">
-                                <p class="font-semibold" x-text="item.pekerjaan"></p>
-                                <p class="text-[11px] text-muted" x-text="item.pendapatan"></p>
-                            </td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.pendapatan" x-text="item.pendapatan"></td>
+                            <td class="py-3 px-4 text-xs font-semibold text-ink" x-show="kolomSvi.pekerjaan" x-text="item.pekerjaan"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.pendidikan" x-text="item.pendidikan"></td>
+                            <td class="py-3 px-4 text-xs text-center tabular-nums text-ink" x-show="kolomSvi.anggota" x-text="item.jumlah_anggota + ' org'"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.dinding" x-text="item.jenis_dinding"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.lantai" x-text="item.jenis_lantai"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.sanitasi" x-text="item.sanitasi"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.air" x-text="item.sumber_air"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomSvi.lahan" x-text="item.kepemilikan_lahan"></td>
                             <td class="py-3 px-4 text-center tabular-nums" x-show="kolomSkor">
                                 <span class="font-bold text-ink block" x-text="item.skor"></span>
                                 <span class="text-[10px] text-muted block font-normal" x-text="'(rata-rata ' + (item.skor / 9).toFixed(2).replace('.', ',') + ')'"></span>
@@ -686,7 +805,7 @@
                             <thead>
                                 <tr style="background-color: #f2f2f2;">
                                     <th style="border: 1px solid #000000; padding: 6px; text-align: center;">Total Kepala Keluarga</th>
-                                    <th style="border: 1px solid #000000; padding: 6px; text-align: center;">Kerentanan Tinggi (Prioritas Bansos)</th>
+                                    <th style="border: 1px solid #000000; padding: 6px; text-align: center;">Kerentanan Tinggi</th>
                                     <th style="border: 1px solid #000000; padding: 6px; text-align: center;">Kerentanan Sedang</th>
                                     <th style="border: 1px solid #000000; padding: 6px; text-align: center;">Kerentanan Rendah</th>
                                 </tr>
@@ -713,7 +832,15 @@
                                     <th style="border: 1px solid #000000; padding: 5px; width: 65px;">Jalur Detail</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 65px;">Status</th>
                                     <th style="border: 1px solid #000000; padding: 5px; text-align: left;">RT / RW &amp; Alamat</th>
-                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomKarakteristik">Pekerjaan &amp; Pendapatan Bulanan</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.pendapatan">Pendapatan Bulanan</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.pekerjaan">Pekerjaan Utama</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.pendidikan">Jenjang Pendidikan</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; width: 45px; text-align: center;" x-show="kolomSvi.anggota">Anggota</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.dinding">Dinding</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.lantai">Lantai</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.sanitasi">Sanitasi</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.air">Sumber Air</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomSvi.lahan">Legalitas Lahan</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 45px;" x-show="kolomSkor">Skor</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 90px;" x-show="kolomSkor">Klasifikasi</th>
                                 </tr>
@@ -726,10 +853,15 @@
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;" x-text="item.jalur"></td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center;" x-text="item.status_penduduk"></td>
                                         <td style="border: 1px solid #000000; padding: 4px;" x-text="item.alamat"></td>
-                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 9px;" x-show="kolomKarakteristik">
-                                            <div class="font-bold" x-text="item.pekerjaan"></div>
-                                            <div class="text-[8.5px] text-gray-700" x-text="item.pendapatan"></div>
-                                        </td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.pendapatan" x-text="item.pendapatan"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px; font-weight: bold;" x-show="kolomSvi.pekerjaan" x-text="item.pekerjaan"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.pendidikan" x-text="item.pendidikan"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px; text-align: center;" x-show="kolomSvi.anggota" x-text="item.jumlah_anggota + ' org'"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.dinding" x-text="item.jenis_dinding"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.lantai" x-text="item.jenis_lantai"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.sanitasi" x-text="item.sanitasi"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.air" x-text="item.sumber_air"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 8.5px;" x-show="kolomSvi.lahan" x-text="item.kepemilikan_lahan"></td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;" x-show="kolomSkor" x-text="item.skor"></td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;"
                                             :style="item.klas === 'tinggi' ? 'color: #991B1B;' : (item.klas === 'sedang' ? 'color: #92400E;' : 'color: #166534;')"
@@ -784,8 +916,40 @@ function panelLaporan() {
 
         // Kolom State
         kolomIdentitas: true,
-        kolomKarakteristik: true,
         kolomSkor: true,
+
+        // Kolom 9 SVI (Checkbox independen per indikator)
+        kolomSvi: {
+            pendapatan: true,
+            pekerjaan: true,
+            pendidikan: false,
+            anggota: false,
+            dinding: false,
+            lantai: false,
+            sanitasi: false,
+            air: false,
+            lahan: false
+        },
+
+        get activeKolomSviCount() {
+            let count = 0;
+            for (const k in this.kolomSvi) {
+                if (this.kolomSvi[k]) count++;
+            }
+            return count;
+        },
+
+        pilihSemuaKolomSvi() {
+            for (const k in this.kolomSvi) this.kolomSvi[k] = true;
+        },
+
+        pilihStandarKolomSvi() {
+            for (const k in this.kolomSvi) this.kolomSvi[k] = (k === 'pekerjaan' || k === 'pendapatan');
+        },
+
+        resetKolomSvi() {
+            for (const k in this.kolomSvi) this.kolomSvi[k] = false;
+        },
 
         // Accordion & Filter 9 SVI State
         openSviAccordion: false,
@@ -1068,7 +1232,15 @@ function panelLaporan() {
 
                     // Hitung jumlah kolom aktif untuk colspan header
                     let totalKolom = 5; // No, Nama, Jalur, Status, RT/RW & Alamat
-                    if (this.kolomKarakteristik) totalKolom += 2; // Pekerjaan Utama, Pendapatan Bulanan
+                    if (this.kolomSvi.pendapatan) totalKolom++;
+                    if (this.kolomSvi.pekerjaan) totalKolom++;
+                    if (this.kolomSvi.pendidikan) totalKolom++;
+                    if (this.kolomSvi.anggota) totalKolom++;
+                    if (this.kolomSvi.dinding) totalKolom++;
+                    if (this.kolomSvi.lantai) totalKolom++;
+                    if (this.kolomSvi.sanitasi) totalKolom++;
+                    if (this.kolomSvi.air) totalKolom++;
+                    if (this.kolomSvi.lahan) totalKolom++;
                     if (this.kolomSkor) totalKolom += 2;          // Total Skor, Klasifikasi
 
                     let tableHeaderCols = '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">No</th>' +
@@ -1077,10 +1249,15 @@ function panelLaporan() {
                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Status Kependudukan</th>' +
                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">RT / RW & Alamat Lengkap</th>';
 
-                    if (this.kolomKarakteristik) {
-                        tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pekerjaan Utama</th>' +
-                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pendapatan Bulanan</th>';
-                    }
+                    if (this.kolomSvi.pendapatan) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pendapatan Bulanan</th>';
+                    if (this.kolomSvi.pekerjaan) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pekerjaan Utama</th>';
+                    if (this.kolomSvi.pendidikan) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Jenjang Pendidikan</th>';
+                    if (this.kolomSvi.anggota) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Jumlah Anggota</th>';
+                    if (this.kolomSvi.dinding) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Material Dinding</th>';
+                    if (this.kolomSvi.lantai) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Material Lantai</th>';
+                    if (this.kolomSvi.sanitasi) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Fasilitas Sanitasi</th>';
+                    if (this.kolomSvi.air) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Sumber Air Bersih</th>';
+                    if (this.kolomSvi.lahan) tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Legalitas Lahan/Rumah</th>';
 
                     if (this.kolomSkor) {
                         tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Total Skor SVI</th>' +
@@ -1106,10 +1283,15 @@ function panelLaporan() {
                             '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px;">' + item.status_penduduk + '</td>' +
                             '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + item.alamat + '</td>';
 
-                        if (this.kolomKarakteristik) {
-                            tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pekerjaan || '-') + '</td>' +
-                                         '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pendapatan || '-') + '</td>';
-                        }
+                        if (this.kolomSvi.pendapatan) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pendapatan || '-') + '</td>';
+                        if (this.kolomSvi.pekerjaan) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pekerjaan || '-') + '</td>';
+                        if (this.kolomSvi.pendidikan) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pendidikan || '-') + '</td>';
+                        if (this.kolomSvi.anggota) tableRows += '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px;">' + item.jumlah_anggota + ' org</td>';
+                        if (this.kolomSvi.dinding) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.jenis_dinding || '-') + '</td>';
+                        if (this.kolomSvi.lantai) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.jenis_lantai || '-') + '</td>';
+                        if (this.kolomSvi.sanitasi) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.sanitasi || '-') + '</td>';
+                        if (this.kolomSvi.air) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.sumber_air || '-') + '</td>';
+                        if (this.kolomSvi.lahan) tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.kepemilikan_lahan || '-') + '</td>';
 
                         if (this.kolomSkor) {
                             tableRows += '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px; font-weight: bold;">' + item.skor + '</td>' +
@@ -1151,7 +1333,7 @@ function panelLaporan() {
                                     '<td style="text-align: center; font-size: 11pt; padding: 6px;">' + ringkas.totalKK + ' Kepala Keluarga</td>' +
                                 '</tr>' +
                                 '<tr>' +
-                                    '<td style="background-color: #FEF2F2; color: #991B1B; padding: 6px;">Kerentanan Tinggi (Prioritas Intervensi Bansos)</td>' +
+                                    '<td style="background-color: #FEF2F2; color: #991B1B; padding: 6px;">Kerentanan Tinggi</td>' +
                                     '<td style="text-align: center; font-size: 11pt; color: #991B1B; background-color: #FEF2F2; padding: 6px;">' + ringkas.tinggi + ' KK</td>' +
                                 '</tr>' +
                                 '<tr>' +
