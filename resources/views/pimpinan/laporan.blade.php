@@ -141,8 +141,21 @@
         'lat' => $w->latitude,
         'lng' => $w->longitude,
         'skor' => $w->skor_svi,
+        'skor_rata_rata' => $w->skor_rata_rata ?? (number_format($w->total_skor / 9, 2, ',', '.')),
         'klas' => strtolower($w->klasifikasi),
-        'klasLabel' => 'Kerentanan ' . ucfirst($w->klasifikasi)
+        'klasLabel' => 'Kerentanan ' . ucfirst($w->klasifikasi),
+        // 9 Variabel SVI Lapangan
+        'pendapatan' => $w->pendapatan ?? '-',
+        'pekerjaan' => $w->pekerjaan ?? '-',
+        'pendidikan' => $w->pendidikan ?? '-',
+        'jumlah_anggota' => (int) ($w->jumlah_anggota_keluarga ?? 4),
+        'jenis_dinding' => $w->jenis_dinding ?? '-',
+        'jenis_lantai' => $w->jenis_lantai ?? '-',
+        'fisik_bangunan' => ($w->jenis_dinding ?? '-') . ' / ' . ($w->jenis_lantai ?? '-'),
+        'sanitasi' => $w->fasilitas_sanitasi ?? '-',
+        'sumber_air' => $w->sumber_air ?? '-',
+        'pendapatan_tambahan' => $w->pendapatan_tambahan ?? '-',
+        'kepemilikan_lahan' => $w->kepemilikan_lahan ?? '-',
     ])->values());
 @endphp
 
@@ -194,9 +207,10 @@
                         <label class="block text-label text-ink mb-1.5 font-semibold text-xs">Wilayah Permukiman</label>
                         <select x-model="wilayah" class="input-select text-xs font-medium">
                             <option value="semua">Semua Wilayah</option>
-                            <option value="Jalur A">Jalur A Saja (Jalur 1A - 6A)</option>
-                            <option value="Jalur B">Jalur B Saja (Jalur 1B - 7B)</option>
-                            <option value="Poros Trans">Jalan Poros Trans Papua</option>
+                            <option value="Jalur A">Jalur A (Jalur 1A – 6A)</option>
+                            <option value="Jalur B">Jalur B (Jalur 1B – 7B)</option>
+                            <option value="Poros Trans">Jalan Poros Trans Merauke-Sota</option>
+                            <option value="Poros Sota PLBN">Jalan Poros Sota PLBN</option>
                         </select>
                     </div>
 
@@ -260,10 +274,9 @@
                         </label>
 
                         <label class="flex items-center gap-2.5 cursor-pointer select-none hover:text-brand transition-colors">
-                            <input type="checkbox" x-model="kolomKoordinat" class="rounded border-line text-brand h-4 w-4">
-                            <span class="font-medium text-ink">Titik Koordinat (Latitude &amp; Longitude WGS84)</span>
+                            <input type="checkbox" x-model="kolomKarakteristik" class="rounded border-line text-brand h-4 w-4">
+                            <span class="font-medium text-ink">Karakteristik SVI (Pekerjaan Utama &amp; Pendapatan Bulanan)</span>
                         </label>
-
 
                         <label class="flex items-center gap-2.5 cursor-pointer select-none hover:text-brand transition-colors">
                             <input type="checkbox" x-model="kolomSkor" class="rounded border-line text-brand h-4 w-4">
@@ -303,6 +316,137 @@
                             <span class="text-xs font-extrabold text-emerald-900" x-text="ringkasanTotal.rendah + ' KK'"></span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ============================================================
+             FILTER SPESIFIK 9 INDIKATOR SVI (KUESIONER LAPANGAN)
+             ============================================================ --}}
+        <div class="border-t border-line pt-4 space-y-3">
+            <div class="flex items-center justify-between cursor-pointer select-none bg-paper/60 hover:bg-paper p-3 rounded-xl border border-line transition-all"
+                 @click="openSviAccordion = !openSviAccordion">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-brand/10 text-brand shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    </span>
+                    <div>
+                        <h4 class="text-xs font-bold text-ink flex items-center gap-2">
+                            <span>Filter Spesifik Berdasarkan 9 Indikator SVI</span>
+                            <span class="text-[10px] font-normal text-muted">(Opsional untuk sasaran bansos/program tematik)</span>
+                        </h4>
+                        <p class="text-[11px] text-muted">Saring daftar cetak berdasarkan pekerjaan, pendapatan bulanan, jenis fisik bangunan, MCK, lahan, dll.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <template x-if="activeSviCount > 0">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand text-white shadow-xs"
+                              x-text="activeSviCount + ' Filter SVI Aktif'"></span>
+                    </template>
+                    <template x-if="activeSviCount > 0">
+                        <button type="button"
+                                @click.stop="resetSviFilter()"
+                                class="text-[11px] text-rose-600 hover:text-rose-800 font-bold px-2 py-0.5 rounded hover:bg-rose-50 transition-colors">
+                            Reset SVI
+                        </button>
+                    </template>
+                    <span class="text-muted text-xs font-bold transition-transform duration-200"
+                          :class="openSviAccordion ? 'rotate-180' : ''">▼</span>
+                </div>
+            </div>
+
+            {{-- Grid 9 Dropdown Indikator SVI --}}
+            <div x-show="openSviAccordion"
+                 x-transition
+                 class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-paper/30 rounded-xl border border-line/80">
+                {{-- 1. Pendapatan --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">1. Rentang Pendapatan</label>
+                    <select x-model="sviFilter.pendapatan" class="input-select w-full text-xs" :class="sviFilter.pendapatan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Rentang</option>
+                        <option value="1">Rp2.500.000 ke atas</option>
+                        <option value="2">Rp1.000.000 – Rp2.499.999</option>
+                        <option value="3">Kurang dari Rp1.000.000</option>
+                    </select>
+                </div>
+                {{-- 2. Pekerjaan --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">2. Pekerjaan Utama</label>
+                    <select x-model="sviFilter.pekerjaan" class="input-select w-full text-xs" :class="sviFilter.pekerjaan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Pekerjaan</option>
+                        <option value="1">Formal / Tetap / PNS / Wiraswasta</option>
+                        <option value="2">Petani / Peternak / Honorer</option>
+                        <option value="3">Buruh / Serabutan / Tidak Bekerja</option>
+                    </select>
+                </div>
+                {{-- 3. Pendidikan --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">3. Jenjang Pendidikan</label>
+                    <select x-model="sviFilter.pendidikan" class="input-select w-full text-xs" :class="sviFilter.pendidikan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Pendidikan</option>
+                        <option value="1">Perguruan Tinggi (Diploma/S1/S2)</option>
+                        <option value="2">Tamat SMA / Sederajat</option>
+                        <option value="3">SD / SMP / Tidak Tamat</option>
+                    </select>
+                </div>
+                {{-- 4. Anggota Keluarga --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">4. Jumlah Anggota Keluarga</label>
+                    <select x-model="sviFilter.anggota" class="input-select w-full text-xs" :class="sviFilter.anggota !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Jumlah Anggota</option>
+                        <option value="1">1 – 2 orang</option>
+                        <option value="2">3 – 4 orang</option>
+                        <option value="3">&gt; 4 orang</option>
+                    </select>
+                </div>
+                {{-- 5. Material Dinding --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">5. Material Dinding</label>
+                    <select x-model="sviFilter.dinding" class="input-select w-full text-xs" :class="sviFilter.dinding !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Dinding</option>
+                        <option value="tembok">Tembok Permanen</option>
+                        <option value="kayu">Kayu / Kulit Kayu</option>
+                    </select>
+                </div>
+                {{-- 6. Material Lantai --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">6. Material Lantai</label>
+                    <select x-model="sviFilter.lantai" class="input-select w-full text-xs" :class="sviFilter.lantai !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Lantai</option>
+                        <option value="keramik">Keramik / Ubin</option>
+                        <option value="semen">Semen</option>
+                        <option value="tanah_kayu">Tanah / Papan Kayu</option>
+                    </select>
+                </div>
+                {{-- 7. Fasilitas Sanitasi (MCK) --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">7. Fasilitas Sanitasi (MCK)</label>
+                    <select x-model="sviFilter.sanitasi" class="input-select w-full text-xs" :class="sviFilter.sanitasi !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Sanitasi</option>
+                        <option value="pribadi">MCK Pribadi / Jamban Sehat</option>
+                        <option value="umum">MCK Umum / Berbagi Tetangga</option>
+                        <option value="tidak_ada">Tidak Ada Sanitasi / Menumpang</option>
+                    </select>
+                </div>
+                {{-- 8. Sumber Air Bersih --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">8. Sumber Air Bersih</label>
+                    <select x-model="sviFilter.air" class="input-select w-full text-xs" :class="sviFilter.air !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Sumber Air</option>
+                        <option value="pdam">PDAM</option>
+                        <option value="bor_galon">Sumur Bor / Air Galon</option>
+                        <option value="gali">Sumur Gali / Hujan</option>
+                    </select>
+                </div>
+                {{-- 9. Legalitas Lahan & Rumah --}}
+                <div>
+                    <label class="block text-[11px] font-semibold text-ink mb-1">9. Legalitas Lahan &amp; Rumah</label>
+                    <select x-model="sviFilter.lahan" class="input-select w-full text-xs" :class="sviFilter.lahan !== 'semua' ? 'border-brand bg-brand/5 font-bold text-brand' : ''">
+                        <option value="semua">Semua Kepemilikan</option>
+                        <option value="sendiri">Milik Sendiri / Warisan</option>
+                        <option value="sewa">Sewa / Garapan / Pinjam Pakai</option>
+                        <option value="tidak_ada">Tidak Ada Lahan / Menumpang</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -378,7 +522,7 @@
                         <th class="py-3 px-4">Nama KK &amp; Alamat</th>
                         <th class="py-3 px-4">Jalur Detail</th>
                         <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4" x-show="kolomKoordinat">Koordinat (Lat, Lng)</th>
+                        <th class="py-3 px-4" x-show="kolomKarakteristik">Karakteristik SVI (Pekerjaan &amp; Pendapatan)</th>
                         <th class="py-3 px-4 text-center" x-show="kolomSkor">Total Skor</th>
                         <th class="py-3 px-4" x-show="kolomSkor">Klasifikasi</th>
                     </tr>
@@ -399,8 +543,10 @@
                                       :class="item.status_penduduk === 'Tetap' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'"
                                       x-text="item.status_penduduk"></span>
                             </td>
-                            <td class="py-3 px-4 text-xs tabular-nums text-muted font-mono" x-show="kolomKoordinat"
-                                x-text="item.lat + ', ' + item.lng"></td>
+                            <td class="py-3 px-4 text-xs text-ink" x-show="kolomKarakteristik">
+                                <p class="font-semibold" x-text="item.pekerjaan"></p>
+                                <p class="text-[11px] text-muted" x-text="item.pendapatan"></p>
+                            </td>
                             <td class="py-3 px-4 text-center tabular-nums" x-show="kolomSkor">
                                 <span class="font-bold text-ink block" x-text="item.skor"></span>
                                 <span class="text-[10px] text-muted block font-normal" x-text="'(rata-rata ' + (item.skor / 9).toFixed(2).replace('.', ',') + ')'"></span>
@@ -529,7 +675,7 @@
                             LAPORAN REKAPITULASI HASIL PENGUKURAN INDEKS KERENTANAN SOSIAL EKONOMI (SVI)
                         </h2>
                         <p class="text-[11px] text-gray-800 mt-2" style="font-family: 'Times New Roman', Times, serif;">
-                            Cakupan: <span class="font-bold" x-text="getWilayahText()"></span> &bull; Tanggal Penetapan: <strong>{{ $tanggalLaporan ?? now("Asia/Jayapura")->translatedFormat("d F Y") }}</strong>
+                            Cakupan: <span class="font-bold" x-text="getWilayahText()"></span> &bull; Kriteria SVI: <span class="font-bold" x-text="getKriteriaSviText()"></span> &bull; Tanggal Penetapan: <strong>{{ $tanggalLaporan ?? now("Asia/Jayapura")->translatedFormat("d F Y") }}</strong>
                         </p>
                     </div>
 
@@ -567,7 +713,7 @@
                                     <th style="border: 1px solid #000000; padding: 5px; width: 65px;">Jalur Detail</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 65px;">Status</th>
                                     <th style="border: 1px solid #000000; padding: 5px; text-align: left;">RT / RW &amp; Alamat</th>
-                                    <th style="border: 1px solid #000000; padding: 5px;" x-show="kolomKoordinat">Titik Koordinat</th>
+                                    <th style="border: 1px solid #000000; padding: 5px; text-align: left;" x-show="kolomKarakteristik">Pekerjaan &amp; Pendapatan Bulanan</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 45px;" x-show="kolomSkor">Skor</th>
                                     <th style="border: 1px solid #000000; padding: 5px; width: 90px;" x-show="kolomSkor">Klasifikasi</th>
                                 </tr>
@@ -580,7 +726,10 @@
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;" x-text="item.jalur"></td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center;" x-text="item.status_penduduk"></td>
                                         <td style="border: 1px solid #000000; padding: 4px;" x-text="item.alamat"></td>
-                                        <td style="border: 1px solid #000000; padding: 4px; font-family: monospace; font-size: 8.5px; text-align: center;" x-show="kolomKoordinat" x-text="item.lat + ', ' + item.lng"></td>
+                                        <td style="border: 1px solid #000000; padding: 4px; font-size: 9px;" x-show="kolomKarakteristik">
+                                            <div class="font-bold" x-text="item.pekerjaan"></div>
+                                            <div class="text-[8.5px] text-gray-700" x-text="item.pendapatan"></div>
+                                        </td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;" x-show="kolomSkor" x-text="item.skor"></td>
                                         <td style="border: 1px solid #000000; padding: 4px; text-align: center; font-weight: bold;"
                                             :style="item.klas === 'tinggi' ? 'color: #991B1B;' : (item.klas === 'sedang' ? 'color: #92400E;' : 'color: #166534;')"
@@ -635,8 +784,79 @@ function panelLaporan() {
 
         // Kolom State
         kolomIdentitas: true,
-        kolomKoordinat: true,
+        kolomKarakteristik: true,
         kolomSkor: true,
+
+        // Accordion & Filter 9 SVI State
+        openSviAccordion: false,
+        sviFilter: {
+            pendapatan: 'semua',
+            pekerjaan: 'semua',
+            pendidikan: 'semua',
+            anggota: 'semua',
+            dinding: 'semua',
+            lantai: 'semua',
+            sanitasi: 'semua',
+            air: 'semua',
+            lahan: 'semua'
+        },
+
+        get activeSviCount() {
+            let count = 0;
+            for (const k in this.sviFilter) {
+                if (this.sviFilter[k] !== 'semua') count++;
+            }
+            return count;
+        },
+
+        resetSviFilter() {
+            for (const k in this.sviFilter) {
+                this.sviFilter[k] = 'semua';
+            }
+        },
+
+        getKriteriaSviText() {
+            const parts = [];
+            const sf = this.sviFilter;
+            if (sf.pendapatan !== 'semua') {
+                const labels = { '1': '> Rp 2.5 Jt', '2': 'Rp 1 - 2.5 Jt', '3': '< Rp 1 Jt' };
+                parts.push('Pendapatan: ' + (labels[sf.pendapatan] || sf.pendapatan));
+            }
+            if (sf.pekerjaan !== 'semua') {
+                const labels = { '1': 'PNS/TNI/Polri/Tetap', '2': 'Petani/Kebun/Pedagang', '3': 'Buruh/Serabutan/Tdk Bekerja' };
+                parts.push('Pekerjaan: ' + (labels[sf.pekerjaan] || sf.pekerjaan));
+            }
+            if (sf.pendidikan !== 'semua') {
+                const labels = { '1': 'Perguruan Tinggi', '2': 'SMA Sederajat', '3': 'SD/SMP/Tdk Tamat' };
+                parts.push('Pendidikan: ' + (labels[sf.pendidikan] || sf.pendidikan));
+            }
+            if (sf.anggota !== 'semua') {
+                const labels = { '1': '1-2 org', '2': '3-4 org', '3': '>4 org' };
+                parts.push('Jml Anggota: ' + (labels[sf.anggota] || sf.anggota));
+            }
+            if (sf.dinding !== 'semua') {
+                parts.push('Dinding: ' + (sf.dinding === 'tembok' ? 'Tembok' : 'Kayu'));
+            }
+            if (sf.lantai !== 'semua') {
+                const labels = { 'keramik': 'Keramik', 'semen': 'Semen', 'tanah_kayu': 'Tanah/Kayu' };
+                parts.push('Lantai: ' + (labels[sf.lantai] || sf.lantai));
+            }
+            if (sf.sanitasi !== 'semua') {
+                const labels = { 'pribadi': 'MCK Pribadi', 'umum': 'MCK Umum', 'tidak_ada': 'Tdk Ada Sanitasi' };
+                parts.push('Sanitasi: ' + (labels[sf.sanitasi] || sf.sanitasi));
+            }
+            if (sf.air !== 'semua') {
+                const labels = { 'pdam': 'PDAM', 'bor_galon': 'Bor/Galon', 'gali': 'Gali/Hujan' };
+                parts.push('Air: ' + (labels[sf.air] || sf.air));
+            }
+            if (sf.lahan !== 'semua') {
+                const labels = { 'sendiri': 'Milik Sendiri', 'sewa': 'Sewa/Garapan', 'tidak_ada': 'Tdk Ada/Numpang' };
+                parts.push('Lahan: ' + (labels[sf.lahan] || sf.lahan));
+            }
+
+            if (parts.length === 0) return 'Semua Indikator SVI (Standar)';
+            return parts.join(', ');
+        },
 
         // Pagination State (SS3)
         currentPage: 1,
@@ -721,7 +941,86 @@ function panelLaporan() {
                 const matchKlas = (this.tingkatRendah && item.klas === 'rendah') ||
                                   (this.tingkatSedang && item.klas === 'sedang') ||
                                   (this.tingkatTinggi && item.klas === 'tinggi');
-                return matchWilayah && matchStatus && matchKlas;
+
+                // Filter 9 Variabel SVI
+                let matchSvi = true;
+                const sf = this.sviFilter;
+
+                if (sf.pendapatan !== 'semua') {
+                    const v = (item.pendapatan || '').toLowerCase();
+                    if (sf.pendapatan === '3') {
+                        matchSvi = matchSvi && (v.includes('kurang') || v.includes('<') || v.includes('dibawah'));
+                    } else if (sf.pendapatan === '1') {
+                        matchSvi = matchSvi && (v.includes('2.500.000 ke atas') || v.includes('5.000.000') || v.includes('> 2.500.000') || (v.includes('2.500.000') && !v.includes('1.000.000')));
+                    } else if (sf.pendapatan === '2') {
+                        matchSvi = matchSvi && (v.includes('1.000.000') && v.includes('2.500.000'));
+                    }
+                }
+
+                if (sf.pekerjaan !== 'semua') {
+                    const v = (item.pekerjaan || '').toLowerCase();
+                    if (sf.pekerjaan === '1') {
+                        matchSvi = matchSvi && (/pns|tni|polri|tetap|wiraswasta|guru|dosen/i.test(v));
+                    } else if (sf.pekerjaan === '2') {
+                        matchSvi = matchSvi && (/petani|peternak|kebun|tani|pedagang|honorer|kontrak|sopir|supir|angkot|warung|warunf|bengkel/i.test(v));
+                    } else if (sf.pekerjaan === '3') {
+                        matchSvi = matchSvi && (/buruh|serabutan|tidak bekerja|menganggur|irt|ibu rumah/i.test(v));
+                    }
+                }
+
+                if (sf.pendidikan !== 'semua') {
+                    const v = (item.pendidikan || '').toLowerCase();
+                    if (sf.pendidikan === '1') {
+                        matchSvi = matchSvi && (/perguruan|diploma|s1|s2|s3|sarjana|kuliah/i.test(v));
+                    } else if (sf.pendidikan === '2') {
+                        matchSvi = matchSvi && (/sma|smk|sederajat|paket c|ma/i.test(v));
+                    } else if (sf.pendidikan === '3') {
+                        matchSvi = matchSvi && (/sd|smp|tidak tamat|tidak sekolah|belum tamat/i.test(v));
+                    }
+                }
+
+                if (sf.anggota !== 'semua') {
+                    const v = parseInt(item.jumlah_anggota) || 4;
+                    if (sf.anggota === '1') matchSvi = matchSvi && (v <= 2);
+                    else if (sf.anggota === '2') matchSvi = matchSvi && (v === 3 || v === 4);
+                    else if (sf.anggota === '3') matchSvi = matchSvi && (v > 4);
+                }
+
+                if (sf.dinding !== 'semua') {
+                    const v = (item.jenis_dinding || '').toLowerCase();
+                    if (sf.dinding === 'tembok') matchSvi = matchSvi && (/tembok|permanen/i.test(v));
+                    else if (sf.dinding === 'kayu') matchSvi = matchSvi && (/kayu|papan|kulit/i.test(v));
+                }
+
+                if (sf.lantai !== 'semua') {
+                    const v = (item.jenis_lantai || '').toLowerCase();
+                    if (sf.lantai === 'keramik') matchSvi = matchSvi && (/keramik|ubin|granit/i.test(v));
+                    else if (sf.lantai === 'semen') matchSvi = matchSvi && (/semen|plester/i.test(v));
+                    else if (sf.lantai === 'tanah_kayu') matchSvi = matchSvi && (/tanah|papan|panggung/i.test(v));
+                }
+
+                if (sf.sanitasi !== 'semua') {
+                    const v = (item.sanitasi || '').toLowerCase();
+                    if (sf.sanitasi === 'pribadi') matchSvi = matchSvi && (/pribadi|leher angsa|sehat/i.test(v));
+                    else if (sf.sanitasi === 'umum') matchSvi = matchSvi && (/umum|bersama|berbagi/i.test(v));
+                    else if (sf.sanitasi === 'tidak_ada') matchSvi = matchSvi && (/tidak|numpang|sungai|kebun/i.test(v));
+                }
+
+                if (sf.air !== 'semua') {
+                    const v = (item.sumber_air || '').toLowerCase();
+                    if (sf.air === 'pdam') matchSvi = matchSvi && (/pdam|perpipaan/i.test(v));
+                    else if (sf.air === 'bor_galon') matchSvi = matchSvi && (/bor|galon/i.test(v));
+                    else if (sf.air === 'gali') matchSvi = matchSvi && (/gali|hujan|sungai/i.test(v));
+                }
+
+                if (sf.lahan !== 'semua') {
+                    const v = (item.kepemilikan_lahan || '').toLowerCase();
+                    if (sf.lahan === 'sendiri') matchSvi = matchSvi && (/sendiri|warisan/i.test(v));
+                    else if (sf.lahan === 'sewa') matchSvi = matchSvi && (/sewa|pinjam|garapan|adat/i.test(v));
+                    else if (sf.lahan === 'tidak_ada') matchSvi = matchSvi && (/tidak|numpang/i.test(v));
+                }
+
+                return matchWilayah && matchStatus && matchKlas && matchSvi;
             });
             const maxPage = Math.max(1, Math.ceil(data.length / this.perPage));
             if (this.currentPage > maxPage) {
@@ -742,10 +1041,11 @@ function panelLaporan() {
         },
 
         getWilayahText() {
-            let label = 'Seluruh Wilayah Kampung Sota (Jalur A, Jalur B & Poros Trans)';
-            if (this.wilayah === 'Jalur A') label = 'Wilayah Jalur A (Jalur 1A - 6A)';
-            else if (this.wilayah === 'Jalur B') label = 'Wilayah Jalur B (Jalur 1B - 7B)';
-            else if (this.wilayah === 'Poros Trans') label = 'Wilayah Jalan Poros Trans Papua';
+            let label = 'Seluruh Wilayah Kampung Sota (Jalur A, Jalur B & Poros)';
+            if (this.wilayah === 'Jalur A') label = 'Wilayah Jalur A (Jalur 1A – 6A)';
+            else if (this.wilayah === 'Jalur B') label = 'Wilayah Jalur B (Jalur 1B – 7B)';
+            else if (this.wilayah === 'Poros Trans') label = 'Wilayah Jalan Poros Trans Merauke-Sota';
+            else if (this.wilayah === 'Poros Sota PLBN') label = 'Wilayah Jalan Poros Sota PLBN';
 
             if (this.statusPenduduk !== 'semua') {
                 label += ' - ' + (this.statusPenduduk === 'Tetap' ? 'Warga Tetap' : 'Warga Tidak Tetap');
@@ -768,8 +1068,8 @@ function panelLaporan() {
 
                     // Hitung jumlah kolom aktif untuk colspan header
                     let totalKolom = 5; // No, Nama, Jalur, Status, RT/RW & Alamat
-                    if (this.kolomKoordinat) totalKolom += 2; // Latitude, Longitude
-                    if (this.kolomSkor) totalKolom += 2;      // Total Skor, Klasifikasi
+                    if (this.kolomKarakteristik) totalKolom += 2; // Pekerjaan Utama, Pendapatan Bulanan
+                    if (this.kolomSkor) totalKolom += 2;          // Total Skor, Klasifikasi
 
                     let tableHeaderCols = '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">No</th>' +
                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Nama Kepala Keluarga</th>' +
@@ -777,9 +1077,9 @@ function panelLaporan() {
                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Status Kependudukan</th>' +
                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">RT / RW & Alamat Lengkap</th>';
 
-                    if (this.kolomKoordinat) {
-                        tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Latitude</th>' +
-                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: center;">Longitude</th>';
+                    if (this.kolomKarakteristik) {
+                        tableHeaderCols += '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pekerjaan Utama</th>' +
+                                           '<th style="background-color: #175C6B; color: #FFFFFF; border: 1px solid #000000; padding: 8px; text-align: left;">Pendapatan Bulanan</th>';
                     }
 
                     if (this.kolomSkor) {
@@ -806,9 +1106,9 @@ function panelLaporan() {
                             '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px;">' + item.status_penduduk + '</td>' +
                             '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + item.alamat + '</td>';
 
-                        if (this.kolomKoordinat) {
-                            tableRows += '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px; font-family: monospace;">' + item.lat + '</td>' +
-                                         '<td style="border: 1px solid #CBD5E1; text-align: center; padding: 6px; font-family: monospace;">' + item.lng + '</td>';
+                        if (this.kolomKarakteristik) {
+                            tableRows += '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pekerjaan || '-') + '</td>' +
+                                         '<td style="border: 1px solid #CBD5E1; padding: 6px;">' + (item.pendapatan || '-') + '</td>';
                         }
 
                         if (this.kolomSkor) {
@@ -839,7 +1139,7 @@ function panelLaporan() {
                                 '<tr><td colspan="' + totalKolom + '" class="kop-main">KANTOR KAMPUNG SOTA</td></tr>' +
                                 '<tr><td colspan="' + totalKolom + '" class="kop-sub">DISTRIK SOTA - KAMPUNG SOTA</td></tr>' +
                                 '<tr><td colspan="' + totalKolom + '" class="kop-title">LAPORAN REKAPITULASI HASIL PENGUKURAN INDEKS KERENTANAN SOSIAL EKONOMI (SVI)</td></tr>' +
-                                '<tr><td colspan="' + totalKolom + '" class="kop-desc">Cakupan: ' + wilayahLabel + ' | Tanggal Ekspor: ' + this.tanggalCetakText + '</td></tr>' +
+                                '<tr><td colspan="' + totalKolom + '" class="kop-desc">Cakupan: ' + wilayahLabel + ' | Kriteria: ' + this.getKriteriaSviText() + ' | Tanggal Ekspor: ' + this.tanggalCetakText + '</td></tr>' +
                                 '<tr><td colspan="' + totalKolom + '"></td></tr>' +
                             '</table>' +
                             '<table class="box-ringkas" style="width: 100%; margin-bottom: 16px;">' +
