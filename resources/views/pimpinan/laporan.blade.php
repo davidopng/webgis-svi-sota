@@ -175,7 +175,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-line no-print">
         <div>
             <h2 class="text-xl font-bold text-ink">Unduh Laporan Rekapitulasi</h2>
-            <p class="text-help text-xs mt-0.5">Penyusunan berkas cetak resmi kedinasan dan spreadsheet digital rekapitulasi kerentanan sosial ekonomi warga Kampung Sota untuk keperluan arsip kampung dan analisis tematik.</p>
+            <p class="text-help text-xs mt-0.5">Penyusunan berkas cetak dan spreadsheet digital rekapitulasi kerentanan sosial ekonomi warga Kampung Sota untuk keperluan arsip kampung dan analisis tematik.</p>
         </div>
     </div>
 
@@ -277,32 +277,12 @@
                             <input type="checkbox" x-model="kolomSkor" class="rounded border-line text-brand h-4 w-4">
                             <span class="font-medium text-ink">Total Skor SVI &amp; Lencana Klasifikasi Kerentanan</span>
                         </label>
-
-                        <div class="pt-2 border-t border-line/60 flex items-center justify-between text-[11px]">
-                            <span class="text-muted">Kolom Indikator SVI Terpilih:</span>
-                            <span class="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full" x-text="activeKolomSviCount + ' Kolom Aktif (Diatur di Bawah)'"></span>
-                        </div>
                     </div>
                 </div>
 
-                {{-- Box Ringkasan Cepat Total Data ("28 Kepala Keluarga") --}}
-                <div class="p-3 bg-gradient-to-br from-brand/5 via-surface to-brand/10 border border-brand/20 rounded-xl text-xs space-y-2 shadow-xs">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center font-bold">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            </div>
-                            <div>
-                                <p class="text-[11px] text-muted font-medium">Laporan Terpilih</p>
-                                <h4 class="text-sm font-extrabold text-brand" x-text="ringkasanTotal.totalKK + ' Kepala Keluarga'"></h4>
-                            </div>
-                        </div>
-                        <span class="text-[10px] uppercase font-bold tracking-wider text-muted px-2 py-0.5 rounded bg-surface border border-line">
-                            Rekap Terkini
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-brand/10 text-center">
+                {{-- Box Ringkasan Cepat Total Data --}}
+                <div class="p-3 bg-gradient-to-br from-brand/5 via-surface to-brand/10 border border-brand/20 rounded-xl text-xs shadow-xs">
+                    <div class="grid grid-cols-3 gap-2 text-center">
                         <div class="bg-rose-50 border border-rose-200/80 rounded-lg p-1.5">
                             <span class="text-[10px] text-rose-700 font-semibold block">Tinggi</span>
                             <span class="text-xs font-extrabold text-rose-900" x-text="ringkasanTotal.tinggi + ' KK'"></span>
@@ -575,10 +555,10 @@
                     </template>
                 </div>
                 <span class="font-bold text-ink text-sm">
-                    <span x-show="!loadingPdf">Unduh Format PDF (Siap Cetak Resmi)</span>
-                    <span x-show="loadingPdf">Menyiapkan Lembar Cetak Resmi...</span>
+                    <span x-show="!loadingPdf">Unduh Format PDF (Siap Cetak)</span>
+                    <span x-show="loadingPdf">Menyiapkan Lembar Cetak...</span>
                 </span>
-                <span class="text-muted text-xs mt-1">Dokumen dinas resmi Kampung Sota lengkap dengan KOP surat ganda &amp; lembar tanda tangan</span>
+                <span class="text-muted text-xs mt-1">Dokumen cetak rekapitulasi Kampung Sota lengkap dengan KOP surat &amp; lembar tanda tangan</span>
             </button>
 
             {{-- Tombol Excel --}}
@@ -752,7 +732,7 @@
                             <h4 class="font-bold text-ink text-sm">Lembar Laporan Resmi Kampung Sota</h4>
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand border border-brand/20">Adaptif: A4 / F4 Folio / Letter</span>
                         </div>
-                        <p class="text-muted text-[11px] mt-0.5">Format resmi dinas dengan KOP ganda, rincian statistik kerentanan, dan legalitas tanda tangan</p>
+                        <p class="text-muted text-[11px] mt-0.5">Format cetak rekapitulasi lengkap dengan KOP surat, rincian statistik kerentanan, dan lembar pengesahan</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 self-end sm:self-auto">
