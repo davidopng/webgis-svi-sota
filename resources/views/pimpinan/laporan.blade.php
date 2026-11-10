@@ -281,7 +281,12 @@
                 </div>
 
                 {{-- Box Ringkasan Cepat Total Data --}}
-                <div class="p-3 bg-gradient-to-br from-brand/5 via-surface to-brand/10 border border-brand/20 rounded-xl text-xs shadow-xs">
+                <div class="p-3 bg-gradient-to-br from-brand/5 via-surface to-brand/10 border border-brand/20 rounded-xl text-xs shadow-xs space-y-2">
+                    <div class="flex items-center justify-between pb-2 border-b border-brand/10">
+                        <span class="text-xs font-semibold text-ink">Jumlah Rumah Tangga (KK)</span>
+                        <span class="text-xs font-extrabold text-brand bg-brand/10 px-2 py-0.5 rounded-md" x-text="'Total: ' + ringkasanTotal.totalKK + ' KK'"></span>
+                    </div>
+
                     <div class="grid grid-cols-3 gap-2 text-center">
                         <div class="bg-rose-50 border border-rose-200/80 rounded-lg p-1.5">
                             <span class="text-[10px] text-rose-700 font-semibold block">Tinggi</span>
